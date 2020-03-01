@@ -1,0 +1,229 @@
+\documentclass[11pt]{article}
+\usepackage{geometry}                % See geometry.pdf to learn the layout options. There are lots.
+\geometry{a4paper}                   % ... or a4paper or a5paper or ... 
+%\geometry{landscape}                % Activate for for rotated page geometry
+%\usepackage[parfill]{parskip}    % Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{lipsum}
+\usepackage{authblk}
+\usepackage{bbold}
+%\usepackage{amsaddr}
+\usepackage{bm}
+\usepackage{epstopdf}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage[yyyymmdd,hhmmss]{datetime}
+\pagestyle{fancy}
+\rfoot{Compiled on \today\ at \currenttime}
+\cfoot{}
+\lfoot{Page \thepage}
+\RequirePackage[colorinlistoftodos,prependcaption,textsize=tiny]{todonotes} % look for '\todo'
+\definecolor{darkred}{rgb}{0.4,0.0,0.0}
+\definecolor{darkgreen}{rgb}{0.0,0.4,0.0}
+\definecolor{darkblue}{rgb}{0.0,0.0,0.4}
+\usepackage[bookmarks,linktocpage,colorlinks,
+    linkcolor = darkred,
+    urlcolor  = darkblue,
+    citecolor = darkgreen]{hyperref}
+
+%\DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
+
+\renewcommand{\headrulewidth}{0pt}
+\fancyhead[L]{
+%\includegraphics[width=4cm]{/Users/tomluu/Research/talks/fzjTemplate/uniBonn_logo.jpg}
+}
+\fancyhead[R]{
+%\includegraphics[width=4cm]{/Users/tomluu/Research/talks/fzjTemplate/fzj_logo.jpg}
+}
+\pagestyle{plain}
+
+\title{Simple documentation on \texttt{quboIsingHMC} code}
+\author[1,2]{Thomas Luu}
+\author[2]{Johann Ostmeyer}
+\affil[1]{Institute for Advanced Simulation 4\\
+Forschungszentrum J\"ulich, Germany}
+\affil[2]{HISKP, Rheinische Friedrich-Williams-Universit\"at Bonn, Germany}
+
+%\email{t.luu@fz-juelich.de}
+\date{}                                           % Activate to display a given date or no date
+
+
+\begin{document}
+\maketitle
+\begin{center}
+email: \href{mailto:t.luu@fz-juelich.de}{t.luu@fz-juelich.de}
+\end{center}
+\abstract{
+We describe how we apply our Ising/HMC algorithm to Jason's toy problem.
+}
+
+\thispagestyle{fancy}
+
+\clearpage{}
+%\tableofcontents
+%\newpage
+
+\section{Simple test problem}
+The Hamiltonian is\footnote{Note that the signs in front of $s_iK_{ij}s_j$ and $h_is_i$ are opposite of Jason's and Christopher's convention.}  
+\begin{align}
+H[\bm s]&=-\sum_{ij}s_iK_{ij}s_j-\sum_ih_is_i+\mathcal{E}\label{eqn:H1}\\
+&=-\bm s^{\rm T}K\bm s-\bm h^{\rm T}\bm s+\mathcal{E}\ ,
+\end{align}
+where the spins $s_i=\pm 1$, $\mathcal{E}=23/2$, 
+\begin{equation}
+\bm h = \begin{pmatrix}
+5/2\\ 7/2\\ 5/2\\  -1\\  -2\\  -4 \\  -1
+\end{pmatrix}\ ,
+\end{equation} 
+and
+\begin{equation}\label{eqn:K}
+K=
+\begin{pmatrix}
+ 0&  -2&  -1& 1& 1& 2&  0\\
+         0&  0&  -2& 1& 1& 2& 1	\\
+         0&  0&  0&  0& 1& 2& -1\\
+         0&  0&  0&  0&  0&  0&  0\\
+         0&  0&  0&  0&  0&  -2&  0\\
+         0&  0&  0&  0&  0&  0&  0\\
+         0&  0&  0&  0&  0&  0&  0
+        \end{pmatrix}\ .
+        \end{equation}
+A brute force scan of the phase space shows that the minimum energy occurs when
+\begin{equation}
+\bm s=\begin{pmatrix}
+-1\\ 1\\ -1\\ -1\\ -1\\ -1\\ -1
+\end{pmatrix}\quad,\quad H[\bm s]=1\implies \epsilon = \frac{1}{7}\quad, m = -\frac{5}{7}\ ,
+\end{equation}
+where $\epsilon$ and $m$ are the average energy and magnetization per site, respectively. 
+\begin{figure}
+\center
+\includegraphics[width=.8\columnwidth]{figures/histogram.pdf}
+\caption{Energy states $E_i$ and degeneracy $g_i$ for Hamiltonian defined in Eqs.~\eqref{eqn:H1}-\eqref{eqn:K}.\label{fig:histogram}}
+\end{figure}
+
+\section{Applying the HS transformation}
+The first thing we do is symmetrize the connectivity matrix, 
+\begin{equation}
+-\bm s^{\rm T}K\bm s =-\frac{1}{2}\bm s^{\rm T}\left(K^{}+K^{\rm T}\right)\bm s\equiv-\frac{1}{2}\bm s^{\rm T}K_{\rm sym}\bm s\ .
+\end{equation}
+Now the eigenvalues of $K_{\rm sym}$ are
+\begin{align*}
+\lambda_i = \{&2.70601700045421, 2.46355010284599, 1.61803398874989, \\
+&1.19404817052648, -0.593828775261607, -0.618033988749895,\\ 
+-&6.76978649856507\}\ .
+\end{align*}
+To ensure that the Hubbard-Stratonovich transformation is stable, we add a mass term $\mathcal{C}$ to $K_{\rm sym}$,
+\begin{equation}
+\tilde K \equiv K_{\rm sym}+\mathcal{C}\mathbb{1}_7\ ,
+\end{equation}
+where $\mathcal{C}> 6.76978649856507$.  The eigenvalues of the symmetric matrix $\tilde K$ are now all positive definite.  Using the fact that $s_i^2=1\ \forall\  i$ we can compensate for this mass by an overall shift in the Hamiltonian,
+\begin{equation}
+H[\bm s]=-\frac{1}{2}\bm s^{\rm T}\tilde K\bm s-\bm h^{\rm T}\bm s+\mathcal{E}+\frac{7}{2}\mathcal{C}\ .
+\end{equation}
+
+\subsection{The partition function $\mathcal{Z}$}
+The partition function is
+\begin{equation}
+\mathcal{Z}=\sum_{\{s_i=\pm 1\}}e^{-\beta H[\bm s]}=e^{-\beta\mathcal{E}-\frac{7}{2}\beta\mathcal{C}}
+\sum_{\{s_i=\pm 1\}}e^{\frac{1}{2}\beta\bm s^{\rm T}\tilde K\bm s+\beta\bm h^{\rm T}\bm s}
+\end{equation}
+Now apply the HS transformation for each site,
+\begin{equation}
+\mathcal{Z}=e^{-\beta\mathcal{E}-\frac{7}{2}\beta\mathcal{C}}
+\sum_{\{s_i=\pm 1\}}\int_{-\infty}^{\infty} \frac{1}{\sqrt{\operatorname{det} \tilde{K}}}\left[\prod_{i} \frac{d \phi_{i}}{\sqrt{2 \pi \beta}}\right] e^{-\frac{1}{2 \beta} \sum_{i j} \phi_{i} \tilde{K}_{i j}^{-1} \phi_{j}+\sum_{i} s_{i}\left(\beta h_i+\phi_{i}\right)}\ .
+\end{equation}
+We can now ``integrate out the spins",
+\begin{align}
+\mathcal{Z}&=e^{-\beta\mathcal{E}-\frac{7}{2}\beta\mathcal{C}}
+\int_{-\infty}^{\infty} \frac{1}{\sqrt{\operatorname{det} \tilde{K}}}\left[\prod_{i} \frac{d \phi_{i}}{\sqrt{2 \pi \beta}}\right] \sum_{\{s_i=\pm 1\}}e^{-\frac{1}{2 \beta} \sum_{i j} \phi_{i} \tilde{K}_{i j}^{-1} \phi_{j}+\sum_{i} s_{i}\left(\beta h_i+\phi_{i}\right)}\\
+&=e^{-\beta\mathcal{E}-\frac{7}{2}\beta\mathcal{C}}
+\int_{-\infty}^{\infty} \frac{1}{\sqrt{\operatorname{det} \tilde{K}}}\left[\prod_{i} \frac{d \phi_{i}}{\sqrt{2 \pi \beta}}\right] e^{-\frac{1}{2 \beta} \sum_{i j} \phi_{i} \tilde{K}_{i j}^{-1} \phi_{j}}\left[\prod_i 2\cosh\left(\beta h_i+\phi_{i}\right)\right]\\ 
+&=\frac{e^{-\beta\mathcal{E}-\frac{7}{2}\beta\mathcal{C}}}{\sqrt{\operatorname{det} \tilde{K}}}
+\int_{-\infty}^{\infty}\left[\prod_{i} \frac{d \phi_{i}}{\sqrt{2 \pi \beta}}\right] e^{-\frac{1}{2 \beta} \sum_{i j} \phi_{i} \tilde{K}_{i j}^{-1} \phi_{j}+\sum_i\log\left(2\cosh\left(\beta h_i+\phi_{i}\right)\right)}\
+\end{align}
+We're almost there.  Now make the change of variables,
+\begin{equation}
+\phi_{i}=\sqrt{\beta}\tilde{K}_{i j} \psi_{j}-\beta h_{i}\ .
+\end{equation}
+Ok, we'll skip a couple of steps now, but it's relatively straightforward to make the substitution above and obtain the final version of the partition function in terms of the field $\psi$,
+\begin{multline}\label{eqn:Z}
+\mathcal{Z}=e^{-\beta\mathcal{E}-\frac{7}{2}\beta\mathcal{C}}\sqrt{\operatorname{det}\tilde K}e^{-\frac{1}{2} \beta \bm h^{\rm T} \tilde{K}^{-1} \bm h}\\
+\int_{-\infty}^{\infty}\left[\prod_{i} \frac{d \psi_{i}}{\sqrt{2 \pi}}\right]
+e^{-\frac{1}{2}\bm\psi^{\rm T} \tilde K\bm \psi+\sqrt{\beta}\bm h^{\rm T}\bm\psi+\sum_i\log\left\{2\cosh\left(\sqrt{\beta}\left[\tilde{K}\bm \psi\right]_i\right)\right\}}\\
+\equiv e^{-\beta\mathcal{E}-\frac{7}{2}\beta\mathcal{C}}\sqrt{\operatorname{det}\tilde K}e^{-\frac{1}{2} \beta \bm h^{\rm T} \tilde{K}^{-1} \bm h}
+\int\mathcal{D}[\bm\psi]
+e^{-S[\bm\psi]}\ ,
+\end{multline}
+where
+\begin{equation}
+S[\bm\psi]=\frac{1}{2}\bm\psi^{\rm T} \tilde K\bm \psi-\sqrt{\beta}\bm h^{\rm T}\bm\psi-\sum_i\log\left\{2\cosh\left(\sqrt{\beta}\left[\tilde{K}\bm \psi\right]_i\right)\right\}\ .
+\end{equation}
+The form of this expression is convenient since the only place where an inverse shows up is in $\beta \bm h^{\rm T} \tilde{K}^{-1} \bm h$ and this term is independent of the field $\psi$.  And this term does not impact the force equations in HMC, but we note that it is still needed for obtaining the mean energy (and other quantities) when $h_i\ne 0$.  At the beginning of any calculation one can solve the linear equation (just once)
+\begin{displaymath}
+\tilde K\bm\kappa =\bm h\implies \bm \kappa = \tilde K^{-1}\bm h\ ,
+\end{displaymath}
+which allows the replacement
+\begin{displaymath}
+\beta \bm h^{\rm T} \tilde{K}^{-1} \bm h\rightarrow\beta \bm h^{\rm T}\bm \kappa\ .
+\end{displaymath}
+
+\subsection{The internal energy}
+The internal energy is given by
+\begin{align}
+\langle\beta \epsilon\rangle&=-\frac{\beta}{\Lambda} \frac{\partial}{\partial \beta} \log (\mathcal{Z})\label{eqn:energy}\\
+&\equiv\frac{\int\mathcal{D}[\bm\psi]\ O_{\langle \beta\epsilon\rangle}[\bm\psi]e^{-S[\bm\psi]}}{\int\mathcal{D}[\bm\psi]e^{-S[\bm\psi]}}\ ,
+\end{align}
+where $\Lambda$ is the total dimension of the system  (here $\Lambda=7$).  Plugging~\eqref{eqn:Z} into~\eqref{eqn:energy} one finds
+\begin{equation}\label{eqn:energy op}
+O_{\langle \beta\epsilon\rangle}[\bm\psi]=\frac{\beta\mathcal{E}}{\Lambda}+\frac{\beta\mathcal{C}}{2}
++\frac{\beta}{2\Lambda}\bm h^{\rm T}\bm\kappa
+-\frac{\sqrt{\beta}}{2\Lambda}\bm h^{\rm T}\bm\psi
+-\frac{\sqrt{\beta}}{2 \Lambda} \sum_{i} [\tilde{K}\bm\psi]_i \tanh \left(\sqrt{\beta} [\tilde{K}\bm\psi]_i\right)\ .
+\end{equation}
+
+\subsection{Average magnetization}
+The average magnetization is given by
+\begin{align}
+\langle m\rangle&=\frac{1}{\Lambda \beta}\sum_i \frac{\partial}{\partial h_i} \log (\mathcal{Z})\\
+&\equiv\frac{\int\mathcal{D}[\bm\psi]\ O_{\langle m\rangle}[\bm\psi]e^{-S[\bm\psi]}}{\int\mathcal{D}[\bm\psi]e^{-S[\bm\psi]}}\ .
+\end{align}
+As was done in the previous section, one just has to take derivatives, but now with respect to $h_i$.  A little work gives
+\begin{equation}\label{eqn:m op}
+O_{\langle m\rangle}[\bm\psi]=\frac{1}{\sqrt{\beta}}\frac{1}{\Lambda}\sum_i\psi_i -\frac{1}{\Lambda}\sum_i\kappa_i\ .
+\end{equation}
+
+\section{HMC}
+The artificial Hamiltonian is
+\begin{equation}
+\mathcal{H}[\bm p,\bm \psi]=\frac{\bm p^2}{2}+S[\bm \psi]\ .
+\end{equation}
+The force equations are (repeated indices are summed)
+\begin{equation}
+\begin{array}{l}
+{\dot{\psi_i}=\frac{\partial \mathcal{H}}{\partial p_i}=p_i} \\
+{\dot{p_i}=-\frac{\partial \mathcal{H}}{\partial\psi_i}=-\tilde{K}_{ij} \psi_j+\sqrt{\beta}h_i+\sqrt{\beta} \tilde{K}_{ij} \tanh (\sqrt{\beta} \tilde{K}_{jk} \psi_k)}\ .
+\end{array}
+\end{equation}
+No matrix inversion anywhere!
+
+\section{Results}
+%\begin{figure}
+%\includegraphics[width=.5\columnwidth]{jasonE.pdf}\includegraphics[width=.5\columnwidth]{jasonM.pdf}
+%\caption{HMC evolution of the internal energy (left) and magnetization (right) compared to their respective exact results.\label{fig:e and m results}}
+%\end{figure}
+%\begin{figure}
+%\includegraphics[width=\columnwidth]{jasonME.pdf}
+%\caption{Measurements of the internal energy (left) and magnetization (right) at different inverse temperature $\beta$ compared to their respective exact results.  Errors were obtained via bootstrap of 3000 measurements.\label{fig:e m beta results}}
+%\end{figure}
+%Look at \autoref{fig:e and m results} and \autoref{fig:e m beta results}.
+
+%\newpage
+%\appendix
+
+%\clearpage
+%\bibliography{references}
+
+\end{document}  

@@ -30,3 +30,13 @@
 *.exe
 *.out
 *.app
+
+# stupid endings due to editors
+*~
+
+# tex stuff
+*.log
+quboIsingHMC.pdf
+*.aux
+*.out
+*.gz
