@@ -29,7 +29,8 @@ public:
   double C; // mass term to regulate the connectivity matrix
   double *psi;  // hubbard auxilliary field
   double *psiNew; // new proposed field
-  double *varphi; // used only in version II
+  double *varphi; //
+  double *varphiNew;
   double *varphi2;
   double *varphi3;
   double *h; // external h-field
@@ -59,6 +60,7 @@ public:
   int calcPdot(); // calculates pdot
   int calcPdot(double *psi); // calculates pdot (overloaded)
   int leapfrog();
+  int hmcThermTraj(int traj); // perform one HMC traj and accept (always)
   int hmcTraj(int traj); // perform one HMC trajectory (w/ accept/reject)
   int ergJump(); // do psi ---> -psi jump
 

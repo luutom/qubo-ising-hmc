@@ -78,6 +78,7 @@ int ising::initialize(double Beta, double mass, int MDsteps, int ergJumps) {
   std::cout << "# Kappa = " << kappa << std::endl;
 
   varphi = new double [Lambda]; // this stores K * psi
+  varphiNew = new double [Lambda]; // proposed K*psiNew
   varphi2 = new double [Lambda]; // used for pdot calculation
   varphi3 = new double [Lambda]; // also used for pdot calculation
     
@@ -109,9 +110,9 @@ double ising::calcE(){
 }
 
 int ising::ergJump(){
-
+  // switch psi --> -psi
   for (int i = 0; i < Lambda; i++)
-    psiNew[i] = -psi[i]; //(2*discrete(generator)-1)*psi[i];
+    psiNew[i] = -psi[i]; 
 
   return 0;
 }
@@ -137,12 +138,40 @@ int ising::hmcTraj(int traj){
   Hend = calcH(p,psiNew);
   if(uniform(generator) <= exp(-(Hend-Hstart))) {
     // accept!
-    for(int i=0;i<Lambda;i++) psi[i]= psiNew[i];
+    for(int i=0;i<Lambda;i++) {
+      psi[i] = psiNew[i];
+      varphi[i] = varphiNew[i];
+    }
     acceptP[traj%100]=1.0;
   } else {
     actS = Sstart; // reset action to old value
     acceptP[traj%100]=0.0;
   }
+  
+  return 0;
+}
+
+int ising::hmcThermTraj(int traj){
+  // perform one HMC trajectory and always accept! (thermalization)
+    
+  // first sample momentum with gaussian
+  sampleGaussian(p);
+  calcH();
+
+  if(traj%ergJumpFreq == 0 && ergJumpFreq > 0){
+    // do ergodicity jump
+    ergJump();
+  } else {
+    // now do leapfrog integration
+    leapfrog();
+  }
+
+  calcH(p,psiNew);  // always accept during thermalization
+  for(int i=0;i<Lambda;i++) {
+    psi[i] = psiNew[i];
+    varphi[i] = varphiNew[i];
+  }
+  acceptP[traj%100]=1.0;
   
   return 0;
 }
@@ -224,11 +253,11 @@ double ising::calcS(double *psi){
 
   actS = 0.0;
 
-  sprsax(var,rld,psi,varphi,Lambda);  // this gives varphi[i] = K[i][j]*psi[j]
+  sprsax(var,rld,psi,varphiNew,Lambda);  // this gives varphi[i] = K[i][j]*psi[j]
   for(int i=0;i < Lambda; i++){
-    actS += psi[i]*varphi[i]/2.0;
+    actS += psi[i]*varphiNew[i]/2.0;
     actS -= h[i]*psi[i]*sqrtBeta;
-    actS -= log(2.*cosh(sqrtBeta*varphi[i]));
+    actS -= log(2.*cosh(sqrtBeta*varphiNew[i]));
   }
   
   return actS;

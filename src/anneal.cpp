@@ -45,7 +45,7 @@ int main(int argc, char** argv)
   ergJumpFrequency = -100; // please ignore this for now.  I did not discuss this in the notes.  Setting negative mean no erg jumps.
 
   // set inverse "temperature"
-  beta = 3.0;
+  beta = 2.0;
 
   // initialize remaining parameters before running. . .
   ising.initialize(beta,mass,numberOfMDSteps,ergJumpFrequency);
@@ -63,17 +63,18 @@ int main(int argc, char** argv)
 
   double betaStart,betaEnd,deltaBeta;
 
-  betaStart=.2;
-  betaEnd=beta;
-  deltaBeta=(betaEnd-betaStart)/numOfTherm;
+  // here we start the annealing process. 
+  betaStart=.2;  // we start at some high temperature
+  betaEnd=beta;  // and this is our ending temperature
+  deltaBeta=(betaEnd-betaStart)/numOfTherm;  // and we change in these small increments
   
   for(traj=0;traj<=numOfTherm;traj++) {
-    ising.reset(betaStart+traj * deltaBeta, numberOfMDSteps,ergJumpFrequency);
-    ising.hmcTraj(traj);
+    ising.reset(betaStart+traj * deltaBeta, numberOfMDSteps,ergJumpFrequency);  // this call resets the temperature, num of MD steps, and ergJump frequency
+    ising.hmcThermTraj(traj);  // this does one hmc thermal trajectory  (i.e. it always accepts)
   }
   ising.reset(beta, numberOfMDSteps, ergJumpFrequency);
   for(traj=0;traj<=numOfTherm;traj++) {
-    ising.hmcTraj(traj);
+    ising.hmcTraj(traj);  // now run with accept/reject
   }
 
   
