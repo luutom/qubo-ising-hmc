@@ -45,7 +45,7 @@ int main(int argc, char** argv)
   ergJumpFrequency = -100; // please ignore this for now.  I did not discuss this in the notes.  Setting negative means no erg jumps.
 
   // set inverse "temperature"
-  beta = 3.0;
+  beta = 1.0;
 
   // initialize remaining parameters before running. . .
   ising.initialize(beta,mass,numberOfMDSteps,ergJumpFrequency);

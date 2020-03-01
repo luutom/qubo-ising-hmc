@@ -205,7 +205,7 @@ where
 \begin{equation}
 S[\bm\psi]=\frac{1}{2}\bm\psi^{\rm T} \tilde K\bm \psi-\sqrt{\beta}\bm h^{\rm T}\bm\psi-\sum_i\log\left\{2\cosh\left(\sqrt{\beta}\left[\tilde{K}\bm \psi\right]_i\right)\right\}\ .
 \end{equation}
-The form of this expression is convenient since the only place where an inverse shows up is in $\beta \bm h^{\rm T} \tilde{K}^{-1} \bm h$ and this term is independent of the field $\psi$.  And this term does not impact the force equations in HMC, but we note that it is still needed for obtaining the mean energy (and other quantities) when $h_i\ne 0$.  At the beginning of any calculation one can solve the linear equation (just once)
+The form of this expression is convenient since the only place where an inverse shows up is in $\beta \bm h^{\rm T} \tilde{K}^{-1} \bm h$ and this term is independent of the field $\psi$.  Even though this term does not impact the force equations in HMC, we still need it for obtaining the mean energy (and other quantities) when $h_i\ne 0$.  This will be more clear in the next subsections.  At the beginning of any calculation one can solve the linear equation (just once)
 \begin{displaymath}
 \tilde K\bm\kappa =\bm h\implies \bm \kappa = \tilde K^{-1}\bm h\ ,
 \end{displaymath}
@@ -213,20 +213,25 @@ which allows the replacement
 \begin{displaymath}
 \beta \bm h^{\rm T} \tilde{K}^{-1} \bm h\rightarrow\beta \bm h^{\rm T}\bm \kappa\ .
 \end{displaymath}
+Finally, we define 
+\begin{equation}
+\langle \kappa\rangle =\frac{1}{\Lambda}\sum_i\kappa_i\ .
+\end{equation}
 
 \subsection{$\langle E\rangle$}
 The extensive energy is given by
 \begin{align}
 \langle E\rangle&=-\frac{\partial}{\partial \beta} \log (\mathcal{Z})\label{eqn:energy}\\
-&\equiv\frac{\int\mathcal{D}[\bm\psi]\ O_{\langle E\rangle}[\bm\psi]e^{-S[\bm\psi]}}{\int\mathcal{D}[\bm\psi]e^{-S[\bm\psi]}}\ ,
+&\equiv\frac{\int\mathcal{D}[\bm\psi]\ O_{\langle E\rangle}[\bm\psi]e^{-S[\bm\psi]}}{\int\mathcal{D}[\bm\psi]e^{-S[\bm\psi]}}\ .
 \end{align}
-where $\Lambda$ is the total dimension of the system  (here $\Lambda=7$).  Plugging~\eqref{eqn:Z} into~\eqref{eqn:energy} one finds
+Plugging~\eqref{eqn:Z} into~\eqref{eqn:energy} one finds
 \begin{equation}\label{eqn:energy op}
 O_{\langle E\rangle}[\bm\psi]=\mathcal{E}+\frac{\Lambda\mathcal{C}}{2}
 +\frac{1}{2}\bm h^{\rm T}\bm\kappa
 -\frac{1}{2\sqrt{\beta}}\bm h^{\rm T}\bm\psi
--\frac{1}{2 \sqrt{\beta}} \sum_{i} [\tilde{K}\bm\psi]_i \tanh \left(\sqrt{\beta} [\tilde{K}\bm\psi]_i\right)\ .
+-\frac{1}{2 \sqrt{\beta}} \sum_{i} [\tilde{K}\bm\psi]_i \tanh \left(\sqrt{\beta} [\tilde{K}\bm\psi]_i\right)\ ,
 \end{equation}
+where $\Lambda$ is the total dimension of the system  (here $\Lambda=7$). 
 It is convenient here, and later, to define
 \begin{equation}
 \bm\varphi = \tilde K\bm \psi\ ,
@@ -260,9 +265,10 @@ The average magnetization is given by
 &\equiv\frac{\int\mathcal{D}[\bm\psi]\ O_{\langle m\rangle}[\bm\psi]e^{-S[\bm\psi]}}{\int\mathcal{D}[\bm\psi]e^{-S[\bm\psi]}}\ .
 \end{align}
 As was done in the previous section, one just has to take derivatives, but now with respect to $h_i$.  A little work gives
-\begin{equation}\label{eqn:m op}
-O_{\langle m\rangle}[\bm\psi]=\frac{1}{\sqrt{\beta}}\frac{1}{\Lambda}\sum_i\psi_i -\frac{1}{\Lambda}\sum_i\kappa_i\ .
-\end{equation}
+\begin{align}
+O_{\langle m\rangle}[\bm\psi]&=\frac{1}{\sqrt{\beta}}\frac{1}{\Lambda}\sum_i\psi_i -\frac{1}{\Lambda}\sum_i\kappa_i\nonumber\\
+&=\frac{1}{\sqrt{\beta}}\frac{1}{\Lambda}\sum_i\psi_i -\langle \kappa\rangle\ .\label{eqn:m op}
+\end{align}
 The subroutine that calculates this quantity is in \texttt{quboIsingHMC.cpp}:
 \begin{lstlisting}
 double ising::calcM(){

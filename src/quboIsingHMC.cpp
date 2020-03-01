@@ -71,7 +71,7 @@ int ising::initialize(double Beta, double mass, int MDsteps, int ergJumps) {
   double err;
   std::cout << "# Solve K.k=h . . ." << std::endl;
   linbcg(Lambda,b,k,3,1.e-9,10000,&itcount,&err);
-  std::cout << ". . . success!" << std::endl;
+  std::cout << "# . . . success!" << std::endl;
   
   kappa = 0.0;
   for (int i=0;i<Lambda;i++) kappa += k[i];
