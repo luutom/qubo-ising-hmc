@@ -13,46 +13,62 @@ using namespace std;
 int main(int argc, char** argv)
 {
   ising ising;
-  int L,dim,numberOfMDSteps;
+  int numberOfMDSteps;
   double beta;
   double mass;
   int numOfTrajs,saveFrequency,traj,ergJumpFrequency;
   int index;
   int numOfTherm;
 
-  L=7;  // How many sites per side.  Total number of sites is L^d, where d is dimension of the system
-  dim=2;  // this is the dimension of the problem
-  mass = 6.9; //   This is the coefficient "C" in my notes. Must be greater than 6.76978649856507 for Jason's problem
+  if(argc !=2){
+    std::cout << "# Missing command line argument!" << std::endl;
+    std::cout << "# Usage:: ./anneal KH_inputFile" << std::endl;
+    exit(1);
+  }
+
+  // the first thing we do is load in the connectivity matrix and external field.  We also symmetrize the connectivity matrix in the process
+  ising.readKandH(argv[1]);
+
+  // since Jason and Christopher define the hamiltonian using a different sign convention, we need to multiply the K and h terms with an overall minus sign
+  for(int i=0; i < ising.Lambda;++i) {
+    for(int j=0;j < ising.Lambda; ++j) ising.K[i][j] *= -1;
+    ising.h[i] *= -1;
+  }
+
+  // Now this parameter is IMPORTANT!  This is the overall mass term that must be added to the symmetrized connectivity matrix that makes the HS
+  // transformation stable.  In principle, one needs to know what this parameters is before running the code, and this parameter depends on
+  // eigenvalues of the symmetrized connectivity matrix.  We should probably allow the user to load this value in through the input file.  Maybe later. . .
+  mass = 6.9; //   This is the coefficient "C" in my notes. Must be greater than 6.76978649856507 for simple toy problem.
 
   // set number of MD steps.  Trajectory length is always set to 1
-  numberOfMDSteps = 4;
-  ergJumpFrequency = 100; // please ignore this for now.  I did not discuss this in the notes
+  numberOfMDSteps = 10;
+  ergJumpFrequency = -100; // please ignore this for now.  I did not discuss this in the notes.  Setting negative mean no erg jumps.
 
   // set inverse "temperature"
-  beta = 1.5;
+  beta = 3.0;
 
-  // initialize
-  ising.initialize(L,dim,beta,mass,numberOfMDSteps,ergJumpFrequency);
+  // initialize remaining parameters before running. . .
+  ising.initialize(beta,mass,numberOfMDSteps,ergJumpFrequency);
   
   // some run parameters. . .
-  numOfTherm = 300000;
+  numOfTherm = 500000;
   numOfTrajs = 500000;
   saveFrequency=10;
 
   double *m = new double [numOfTrajs/saveFrequency];
   double *e = new double [numOfTrajs/saveFrequency];
-  double *phi = new double [numOfTrajs/saveFrequency];
+  double *psi = new double [numOfTrajs/saveFrequency];
   double *accP = new double [numOfTrajs/saveFrequency];
   index = 0;
 
   double betaStart,betaEnd,deltaBeta;
 
   betaStart=.2;
-  betaEnd=2.0;
+  betaEnd=beta;
   deltaBeta=(betaEnd-betaStart)/numOfTherm;
   
   for(traj=0;traj<=numOfTherm;traj++) {
-    ising.reset(betaStart+traj * deltaBeta, numberOfMDSteps,-1);
+    ising.reset(betaStart+traj * deltaBeta, numberOfMDSteps,ergJumpFrequency);
     ising.hmcTraj(traj);
   }
   ising.reset(beta, numberOfMDSteps, ergJumpFrequency);
@@ -65,11 +81,11 @@ int main(int argc, char** argv)
     ising.hmcTraj(traj);
     if(traj%saveFrequency==0) {
       m[index] = ising.calcM();
-      e[index] = ising.calcE()/beta;
-      phi[index] = ising.mean(ising.phi,ising.Lambda);
+      e[index] = ising.calcE();
+      psi[index] = ising.mean(ising.psi,ising.Lambda);
       accP[index] = ising.mean(ising.acceptP,100);
-      std::cout << traj << " " << ising.mean(ising.acceptP,100) << " " << phi[index] << " " << m[index] << " " << e[index];
-      for (int j = 0; j<L; j++) std::cout << " " << L*ising.calcSi(j);
+      std::cout << traj << " " << ising.mean(ising.acceptP,100) << " " << psi[index] << " " << m[index] << " " << e[index];
+      for (int j = 0; j<ising.Lambda; j++) std::cout << " " << ising.Lambda*ising.calcSi(j);
       std::cout << std::endl;
       index += 1;
     }

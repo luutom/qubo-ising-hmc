@@ -170,18 +170,29 @@ which allows the replacement
 \beta \bm h^{\rm T} \tilde{K}^{-1} \bm h\rightarrow\beta \bm h^{\rm T}\bm \kappa\ .
 \end{displaymath}
 
-\subsection{The internal energy}
-The internal energy is given by
+\subsection{$\langle E\rangle$}
+The extensive energy is given by
 \begin{align}
-\langle\beta \epsilon\rangle&=-\frac{\beta}{\Lambda} \frac{\partial}{\partial \beta} \log (\mathcal{Z})\label{eqn:energy}\\
-&\equiv\frac{\int\mathcal{D}[\bm\psi]\ O_{\langle \beta\epsilon\rangle}[\bm\psi]e^{-S[\bm\psi]}}{\int\mathcal{D}[\bm\psi]e^{-S[\bm\psi]}}\ ,
+\langle E\rangle&=-\frac{\partial}{\partial \beta} \log (\mathcal{Z})\label{eqn:energy}\\
+&\equiv\frac{\int\mathcal{D}[\bm\psi]\ O_{\langle E\rangle}[\bm\psi]e^{-S[\bm\psi]}}{\int\mathcal{D}[\bm\psi]e^{-S[\bm\psi]}}\ ,
 \end{align}
 where $\Lambda$ is the total dimension of the system  (here $\Lambda=7$).  Plugging~\eqref{eqn:Z} into~\eqref{eqn:energy} one finds
 \begin{equation}\label{eqn:energy op}
-O_{\langle \beta\epsilon\rangle}[\bm\psi]=\frac{\beta\mathcal{E}}{\Lambda}+\frac{\beta\mathcal{C}}{2}
-+\frac{\beta}{2\Lambda}\bm h^{\rm T}\bm\kappa
--\frac{\sqrt{\beta}}{2\Lambda}\bm h^{\rm T}\bm\psi
--\frac{\sqrt{\beta}}{2 \Lambda} \sum_{i} [\tilde{K}\bm\psi]_i \tanh \left(\sqrt{\beta} [\tilde{K}\bm\psi]_i\right)\ .
+O_{\langle E\rangle}[\bm\psi]=\mathcal{E}+\frac{\Lambda\mathcal{C}}{2}
++\frac{1}{2}\bm h^{\rm T}\bm\kappa
+-\frac{1}{2\sqrt{\beta}}\bm h^{\rm T}\bm\psi
+-\frac{1}{2 \sqrt{\beta}} \sum_{i} [\tilde{K}\bm\psi]_i \tanh \left(\sqrt{\beta} [\tilde{K}\bm\psi]_i\right)\ .
+\end{equation}
+It is convenient here, and later, to define
+\begin{equation}
+\bm\varphi = \tilde K\bm \psi\ ,
+\end{equation}
+which means eq.~\eqref{eqn:energy op} becomes
+\begin{equation}\label{eqn:energy op2}
+O_{\langle E\rangle}[\bm\psi]=\mathcal{E}+\frac{\Lambda\mathcal{C}}{2}
++\frac{1}{2}\bm h^{\rm T}\bm\kappa
+-\frac{1}{2\sqrt{\beta}}\bm h^{\rm T}\bm\psi
+-\frac{1}{2 \sqrt{\beta}} \sum_{i} \varphi_i \tanh \left(\sqrt{\beta} \varphi_i\right)\ .
 \end{equation}
 
 \subsection{Average magnetization}

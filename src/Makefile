@@ -1,4 +1,4 @@
-## Comments
+## Skeleton makefile
 ##
 
 ### GNU 
@@ -9,17 +9,12 @@ CXXFLAGS=-std=c++11 -O2 -fopenmp -Wpedantic
 ### WARNINGS
 CXXFLAGS+=-g -Wall -Wextra -Wno-unknown-pragmas -Wno-unused-parameter
 
-### Lapack
-### point to your local installation of lapack
-CXXFLAGS+=-I/usr/local/Cellar/lapack/3.8.0_2/include -L/usr/local/Cellar/lapack/3.8.0_2/lib
-LIBS=-llapacke -llapack
-
 HDRS=quboIsingHMC.h
 OBJS=quboIsingHMC.o
 
-all: anneal
+all: anneal.exe
 
-anneal: $(OBJS) anneal.o
+anneal.exe: $(OBJS) anneal.o
 	$(CXX) -o $@ $(CXXFLAGS) $(OBJS) anneal.o $(LIBS)
 
 libquboIsingHMC.a:
@@ -30,7 +25,7 @@ libisingHMC.so:
 	$(CXX) -w -fPIC -c quboIsingHMC.cpp
 	$(CXX) -shared -o libquboIsingHMC.so $(LIBS) $(OTHER_LIBS)
 
-install: anneal
+install: anneal.exe
 
 archive:
 	tar -zcvf quboIsingHMC.tar.gz *.cpp *.h Makefile 

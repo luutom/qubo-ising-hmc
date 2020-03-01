@@ -1,0 +1,10 @@
+7                               # this is the rank of the matrix
+0.  2.  1.  -1.  -1.  -2.   0.  # now here is the connectivity matrix
+0.  0.  2. -1. -1. -2. -1.
+0.  0.  0.  0. -1. -2. -1.
+0.  0.  0.  0.  0.  0.  0.
+0.  0.  0.  0.  0.  2.  0.
+0.  0.  0.  0.  0.  0.  0.
+0.  0.  0.  0.  0.  0.  0.
+-2.5 -3.5 -2.5  1.  2.  4.  1.  # here is the external field
+11.5                            # this is the overall shift in the energy

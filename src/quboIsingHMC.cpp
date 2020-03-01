@@ -1,7 +1,6 @@
 #include "quboIsingHMC.h"
 #include <cmath>
 #include <iostream>
-#include "lapacke.h"
 
 ising::ising() {
 }
@@ -25,73 +24,62 @@ int ising::reset(double Beta, int MDsteps, int ergJumps){
 }
 
   
-int ising::initialize(int nx, int d ,double Beta, double C, int MDsteps, int ergJumps) {
+int ising::initialize(double Beta, double mass, int MDsteps, int ergJumps) {
   /*
     Sets up arrays and so on
    */
 
   beta = Beta;
   sqrtBeta = sqrt(beta);
-  dim = d;
-  L = nx;
-  mass = C;
+  C = mass;
 
   ergJumpFreq = ergJumps;
   nMD = MDsteps;
   epsilon = 1./nMD;
 
-  Lambda = nx; // pow(L,d);  this is specific for Jason's problem
-
   // allocate arrays. . .
-  phi = new double [Lambda]; sampleGaussian(phi);
-  phiNew = new double [Lambda];
+  psi = new double [Lambda]; sampleGaussian(psi);
+  psiNew = new double [Lambda];
   p = new double [Lambda];   sampleGaussian(p);
   pdot = new double [Lambda];
   for(int i=0;i<100;i++) acceptP[i]=0.0;
-  
 
-  std::cout << "# Seting up Jason's connectivity . . .";
-  K = new double* [Lambda];   // in the future I want to get rid of this step and just put the matrix directly into sparse format. . .
-  for (int i = 0; i < Lambda; i++){
-    K[i] = new double [Lambda];
-    for (int j=0; j < Lambda; j++)
-      K[i][j] = 0.0;  // set all entries to be zero initially
-  }  
-  setupJasonsK(); // sets up the connectivity matrix with variable mass on the diagonal. . .
+  // now add the C term to the connectivity matrix
+  for(int i=0;i < Lambda;++i) K[i][i] += C;
+
   thresh = .000001; // set threshold for 0 matrix elements
-  setUpSparseMatrix(K, Lambda);
-  std::cout << " success!" << std::endl;
+  setUpSparseMatrix(K, Lambda);  // ok, this was assuming that K is sparse.  In the future, this most likely will not be needed anymore.
+
   // after putting K in sparse format, no longer need K itself (again, this part will be removed in the future)
   for (int i = 0; i < Lambda; i++){
     delete [] K[i]; 
   }
   delete [] K;
+
   /*
     Calculate constants here. . . only calculate if H != 0
   */
-
   double *b = new double [Lambda];
-  h = new double [Lambda];
   k = new double [Lambda];
-  // -2.5, -3.5, -2.5,  1. ,  2. ,  4. ,  1.
-  b[0]= 2.5; b[1]= 3.5; b[2]= 2.5; b[3]=-1.0; b[4]=-2.0; b[5]=-4.0; b[6]=-1.0;  // again, this is specific to Jason's problem
-  Hshift = 5.5;  // again, specific to Jason's problem
-  for (int i=0;i<Lambda;i++) h[i]=b[i];
+
+  for (int i=0;i<Lambda;i++) {
+    b[i]=h[i];
+    k[i]=0.0;
+  }
+  
   int itcount;
   double err;
-  std::cout << "# Solve K.x=(-2.5, -3.5, -2.5,  1. ,  2. ,  4. ,  1.)" << std::endl;
+  std::cout << "# Solve K.k=h" << std::endl;
   linbcg(Lambda,b,k,3,1.e-9,10000,&itcount,&err);
+
   kappa = 0.0;
-  // for (int i=0;i<Lambda;i++) std::cout << k[i]  << std::endl;
-  // exit(0);
   for (int i=0;i<Lambda;i++) kappa += k[i];
   kappa /= Lambda;
   std::cout << "# Kappa = " << kappa << std::endl;
 
-  // after constants are calculated, don't need inverse K anymore, but only K.  So re-calculate it
-  ppsi = new double [Lambda]; // this stores K * phi
-  ppsi2 = new double [Lambda]; // used for pdot calculation
-  ppsi3 = new double [Lambda]; // also used for pdot calculation
+  varphi = new double [Lambda]; // this stores K * psi
+  varphi2 = new double [Lambda]; // used for pdot calculation
+  varphi3 = new double [Lambda]; // also used for pdot calculation
     
   return 0;
 }
@@ -99,13 +87,13 @@ int ising::initialize(int nx, int d ,double Beta, double C, int MDsteps, int erg
 double ising::calcSi(int i){
   // calculates polarization on site i
   
-  return phi[i]/Lambda/sqrtBeta-k[i]/Lambda;
+  return psi[i]/Lambda/sqrtBeta-k[i]/Lambda;
 }
 
 double ising::calcM(){
   // calculates magnetization
 
-  M1 = mean(phi,Lambda)/sqrtBeta - kappa;
+  M1 = mean(psi,Lambda)/sqrtBeta - kappa;
   return M1;
 
 }
@@ -113,9 +101,9 @@ double ising::calcM(){
 double ising::calcE(){
   // calculates energy
 
-  E1 =  mass*beta/2.+Hshift*beta/Lambda;
+  E1 =  Lambda*C/2.+mathcalE;
   for (int i=0;i< Lambda; i++)
-    E1 += -sqrtBeta*h[i]*phi[i]/2./Lambda - sqrtBeta*ppsi[i]*tanh(sqrtBeta*ppsi[i])/2.0/Lambda + beta*h[i]*k[i]/2./Lambda;
+    E1 += -h[i]*psi[i]/2./sqrtBeta - varphi[i]*tanh(sqrtBeta*varphi[i])/2.0/sqrtBeta + h[i]*k[i]/2.;
   return E1;
     
 }
@@ -123,7 +111,7 @@ double ising::calcE(){
 int ising::ergJump(){
 
   for (int i = 0; i < Lambda; i++)
-    phiNew[i] = -phi[i]; //(2*discrete(generator)-1)*phi[i];
+    psiNew[i] = -psi[i]; //(2*discrete(generator)-1)*psi[i];
 
   return 0;
 }
@@ -146,10 +134,10 @@ int ising::hmcTraj(int traj){
     leapfrog();
   }
 
-  Hend = calcH(p,phiNew);
+  Hend = calcH(p,psiNew);
   if(uniform(generator) <= exp(-(Hend-Hstart))) {
     // accept!
-    for(int i=0;i<Lambda;i++) phi[i]= phiNew[i];
+    for(int i=0;i<Lambda;i++) psi[i]= psiNew[i];
     acceptP[traj%100]=1.0;
   } else {
     actS = Sstart; // reset action to old value
@@ -162,23 +150,23 @@ int ising::hmcTraj(int traj){
 int ising::leapfrog() {
 
   for(int i=0;i<Lambda;i++)
-    phiNew[i] = phi[i];
+    psiNew[i] = psi[i];
 
   // first half step
-  calcPdot(phiNew);
+  calcPdot(psiNew);
   for (int i=0;i<Lambda;i++)
     p[i] += (epsilon/2.0)*pdot[i];
 
   for (int n=0;n<nMD;n++) {
     for (int i = 0; i<Lambda;i++)
-      phiNew[i] += epsilon * p[i];
-    calcPdot(phiNew);
+      psiNew[i] += epsilon * p[i];
+    calcPdot(psiNew);
     for (int i = 0;i<Lambda;i++)
       p[i] += epsilon * pdot[i];
   }
 
   // correct for overshoot. . .
-  calcPdot(phiNew);
+  calcPdot(psiNew);
   for(int i=0;i<Lambda;i++)
     p[i] -= (epsilon/2.0)*pdot[i];
   
@@ -187,36 +175,36 @@ int ising::leapfrog() {
 
 int ising::calcPdot(){
 
-  sprsax(var,rld,phi,ppsi2,Lambda);  // this gives ppsi2[i] = K[i][j]*phi[j]
-  for(int i=0; i < Lambda; i++)   // this makes the vector ppsi3[i] = sqrtBeta*tanh(sqrtBeta*K[i][j]*phi[j])
-    ppsi3[i]=sqrtBeta*tanh(sqrtBeta*ppsi2[i]);
-  sprsax(var,rld,ppsi3,pdot,Lambda); // this gives pdot[i] = sqrtBeta*K[i][j]*tanh(spqrtJ*ppsi2[j])
+  sprsax(var,rld,psi,varphi2,Lambda);  // this gives varphi2[i] = K[i][j]*psi[j]
+  for(int i=0; i < Lambda; i++)   // this makes the vector varphi3[i] = sqrtBeta*tanh(sqrtBeta*K[i][j]*psi[j])
+    varphi3[i]=sqrtBeta*tanh(sqrtBeta*varphi2[i]);
+  sprsax(var,rld,varphi3,pdot,Lambda); // this gives pdot[i] = sqrtBeta*K[i][j]*tanh(spqrtJ*varphi2[j])
   for(int i=0; i < Lambda; i++)
-    pdot[i] += -ppsi2[i] + h[i]*sqrtBeta;
+    pdot[i] += -varphi2[i] + h[i]*sqrtBeta;
 
   return 0;
 }
 
-int ising::calcPdot(double *phi){
+int ising::calcPdot(double *psi){
 
-  sprsax(var,rld,phi,ppsi2,Lambda);  // this gives ppsi2[i] = K[i][j]*phi[j]
-  for(int i=0; i < Lambda; i++)   // this makes the vector ppsi3[i] = sqrtBeta*tanh(sqrtBeta*K[i][j]*phi[j])
-    ppsi3[i]=sqrtBeta*tanh(sqrtBeta*ppsi2[i]);
-  sprsax(var,rld,ppsi3,pdot,Lambda); // this gives pdot[i] = sqrtBeta*K[i][j]*tanh(sqrtBeta*ppsi2[j])
+  sprsax(var,rld,psi,varphi2,Lambda);  // this gives varphi2[i] = K[i][j]*psi[j]
+  for(int i=0; i < Lambda; i++)   // this makes the vector varphi3[i] = sqrtBeta*tanh(sqrtBeta*K[i][j]*psi[j])
+    varphi3[i]=sqrtBeta*tanh(sqrtBeta*varphi2[i]);
+  sprsax(var,rld,varphi3,pdot,Lambda); // this gives pdot[i] = sqrtBeta*K[i][j]*tanh(sqrtBeta*varphi2[j])
   for(int i=0; i < Lambda; i++)     // now add the remaining terms
-    pdot[i] += -ppsi2[i] + h[i]*sqrtBeta;
+    pdot[i] += -varphi2[i] + h[i]*sqrtBeta;
 
   return 0;
 }
 
-double ising::calcH(double *p, double *phi){
+double ising::calcH(double *p, double *psi){
   // calculates artificial hamiltonian
   
   artH = 0.0;
   for(int i=0; i < Lambda; i++)
     artH += p[i]*p[i]/2.0;
 
-  artH += calcS(phi);
+  artH += calcS(psi);
   return artH;
 }
 
@@ -231,122 +219,88 @@ double ising::calcH(){
   return artH;
 }
 
-double ising::calcS(double *phi){
-  // calculates effective potential S[phi]
+double ising::calcS(double *psi){
+  // calculates effective potential S[psi]
 
   actS = 0.0;
 
-  sprsax(var,rld,phi,ppsi,Lambda);  // this gives ppsi[i] = K[i][j]*phi[j]
+  sprsax(var,rld,psi,varphi,Lambda);  // this gives varphi[i] = K[i][j]*psi[j]
   for(int i=0;i < Lambda; i++){
-    actS += phi[i]*ppsi[i]/2.0;
-    actS -= h[i]*phi[i]*sqrtBeta;
-    actS -= log(2.*cosh(sqrtBeta*ppsi[i]));
+    actS += psi[i]*varphi[i]/2.0;
+    actS -= h[i]*psi[i]*sqrtBeta;
+    actS -= log(2.*cosh(sqrtBeta*varphi[i]));
   }
   
   return actS;
 }
 
 double ising::calcS(){
-  // calculates effective potential S[phi]
+  // calculates effective potential S[psi]
 
   actS = 0.0;
 
-  sprsax(var,rld,phi,ppsi,Lambda);  // this gives ppsi[i] = K[i][j]*phi[j]
+  sprsax(var,rld,psi,varphi,Lambda);  // this gives varphi[i] = K[i][j]*psi[j]
   for(int i=0;i < Lambda; i++){
-    actS += phi[i]*ppsi[i]/2.0;
-    actS -= h[i]*phi[i]*sqrtBeta;
-    actS -= log(2.*cosh(sqrtBeta*ppsi[i]));
+    actS += psi[i]*varphi[i]/2.0;
+    actS -= h[i]*psi[i]*sqrtBeta;
+    actS -= log(2.*cosh(sqrtBeta*varphi[i]));
   }
   
   return actS;
 }
 
-int ising::setupJasonsK() {
+int ising::readKandH(std::string Kfile) {
+  using namespace std;
+  ifstream inputFile;
+  string value;
+  int i,j;
 
-  // K =
-  //   {
-  //    {0., 2., 1, -1, -1, -2., 0.},
-  //    {2., 0., 2., -1, -1, -2., -1},
-  //    {1, 2., 0., 0., -1, -2., -1},
-  //    {-1, -1, 0., 0., 0., 0., 0.},
-  //    {-1, -1, -1, 0., 0., 2., 0.},
-  //    {-2., -2., -2., 0., 2., 0., 0.},
-  //    {0., -1, -1, 0., 0., 0., 0.}
-  //   };
-
-  K[0][1] = -2.0; K[1][0] = K[0][1];
-  K[0][2] = -1.0; K[2][0] = K[0][2];
-  K[0][3] = 1.0; K[3][0] = K[0][3];
-  K[0][4] = 1.0; K[4][0] = K[0][4];
-  K[0][5] = 2.0; K[5][0] = K[0][5];
-
-  K[1][2] = -2.0; K[2][1] = K[1][2];
-  K[1][3] = 1.0; K[3][1] = K[1][3];
-  K[1][4] = 1.0; K[4][1] = K[1][4];
-  K[1][5] = 2.0; K[5][1] = K[1][5];
-  K[1][6] = 1.0; K[6][1] = K[1][6];
-
-  K[2][4] = 1.0; K[4][2] = K[2][4];
-  K[2][5] = 2.0; K[5][2] = K[2][5];
-  K[2][6] = 1.0; K[6][2] = K[2][6];
-
-  K[4][5] = -2.0; K[5][4] = K[4][5];
-
-  for (int i = 0; i< Lambda; i++) K[i][i] += mass;
-  
-  return 0;
-}
-
-int ising::setupK() {
-  int *coordinates;
-  int *nn;
-  int nnIndex;
-  
-  coordinates = new int [dim];
-  nn = new int [dim];
-
-  for (int i=0; i< Lambda; i++) { // loop thru all spin sites
-    getCoordinatesFromIndex(coordinates,i);  // extract coordinate of this spin
-    for(int j=0; j< dim; j++) { // now loop thru nearest neighbors of spin at this coordinate
-      for( int k = 0; k < dim; k++) nn[k]=coordinates[k];
-      nn[j] = (nn[j]+1)%L;  // takes into account periodic boundaries
-      nnIndex = getIndexFromCoordinates(nn,dim);
-      K[nnIndex][i] += 1.0;
-      K[i][nnIndex] += 1.0;
-    };
-    K[i][i] += mass;  // put mass term on diagonal. . .
-  }
-
-  delete [] coordinates;  // garbage collection. . .
-  delete [] nn;
-
-  return 0;
-}
-
-int ising::getIndexFromCoordinates(int *coordinates, int d){
-
-  if(d > 1) {
-    return L*getIndexFromCoordinates(coordinates, d-1)+coordinates[d-1];
+  inputFile.open(Kfile.c_str());
+  if(inputFile.is_open()){
+    getline(inputFile,value);
+    sscanf(value.c_str(), "%d", &Lambda);
+    K = new double* [Lambda];   // set up temp array to store connectivity matrix
+    for (i = 0; i < Lambda; i++){
+      K[i] = new double [Lambda];
+      for (j=0; j < Lambda; j++)
+	K[i][j] = 0.0;  // set all entries to be zero initially
+    }  
+    for (i=0;i<Lambda;++i) {
+      for (j=0;j<Lambda;++j) {
+	inputFile >> value; K[i][j] = atof(value.c_str());
+      }
+      getline(inputFile,value);
+    }
+    h = new double [Lambda];
+    for (j=0;j<Lambda;++j) {
+      inputFile >> value; h[j] = atof(value.c_str());
+    }
+    getline(inputFile,value);
+    getline(inputFile,value);
+    sscanf(value.c_str(), "%lf", &mathcalE);
   } else {
-    return coordinates[d-1];
+    cout << "# Could not load connectivity matrix!"<< endl;
+    return 1;
   }
-}
-
-int ising::getCoordinatesFromIndex(int *coordinates, int Index){
-  int n;
-
-  n=Index;
-  for (int i = 0; i < dim; i++) coordinates[i]=0;
-
-  for (int i = dim-1; i >= 0; i--) {
-    coordinates[i]=n%L;
-    n -= coordinates[i];
-    n /= L;
+  // now symmetrize the K matrix
+  for(i=0;i<Lambda;++i) {
+    for(j=i;j<Lambda;++j) {
+      K[i][j] += K[j][i];
+      K[j][i]=K[i][j];
+    }
   }
+  // for(i=0;i<Lambda;++i) {
+  //   for(j=0;j<Lambda;++j) cout << K[i][j] << " ";
+  //   cout << endl;
+  // }
+  // for(i=0;i<Lambda;++i) cout << h[i] << " ";
+  // cout << endl;
+  // cout << mathcalE << endl;
+  inputFile.close();
+
   return 0;
-  
 }
-  
+
 int ising::sampleGaussian(double *p) {
 
   for (int i=0;i<Lambda; i++) p[i]=normal(generator);
@@ -424,11 +378,12 @@ int ising::getNmax(double **a, int n){
 void ising::sprsax(double sa[], int ija[], double x[], double b[],
 		   int n)
 {
+  int i,k;
 
   if (ija[1 - 1] != n+2) std::cout << "sprsax: mismatched vector and matrix" << std::endl;
-  for(int i=1;i<=n;i++) {
+  for(i=1;i<=n;i++) {
     b[i - 1]=sa[i - 1]*x[i - 1];
-    for(int k=ija[i - 1];k<=ija[i+1 - 1]-1;k++)
+    for(k=ija[i - 1];k<=ija[i+1 - 1]-1;k++)
       b[i - 1] += sa[k - 1]*x[ija[k - 1] - 1];
 
   }
@@ -437,12 +392,13 @@ void ising::sprsax(double sa[], int ija[], double x[], double b[],
 void ising::sprstx(double sa[], int ija[], double x[], double b[],
 		   int n)
 {
-
+  int i,j,k;
+  
   if(ija[1 - 1] != n+2) std::cout << "sprstx: mismatched vector and matrix" << std::endl;
-  for(int i=1;i<=n;i++) b[i - 1]=sa[i - 1]*x[i - 1];
-  for(int i=1;i<=n;i++) {
-    for(int k=ija[i - 1];k<=ija[i+1 - 1]-1;k++) {
-      int j=ija[k - 1];
+  for(i=1;i<=n;i++) b[i - 1]=sa[i - 1]*x[i - 1];
+  for(i=1;i<=n;i++) {
+    for(k=ija[i - 1];k<=ija[i+1 - 1]-1;k++) {
+      j=ija[k - 1];
       b[j - 1] += sa[k - 1]*x[i - 1];
     }
   }
