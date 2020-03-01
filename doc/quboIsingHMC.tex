@@ -42,11 +42,14 @@
 \pagestyle{plain}
 
 \title{Simple documentation on \texttt{quboIsingHMC} code}
-\author[1,2]{Thomas Luu}
-\author[2]{Johann Ostmeyer}
-\affil[1]{Institute for Advanced Simulation 4\\
+\author[1]{Jason Chang}
+\author[1]{Christopher K\"orber}
+\author[2,3]{Thomas Luu}
+\author[3]{Johann Ostmeyer}
+\affil[1]{LBL, Berkeley, California}
+\affil[2]{Institute for Advanced Simulation 4\\
 Forschungszentrum J\"ulich, Germany}
-\affil[2]{HISKP, Rheinische Friedrich-Williams-Universit\"at Bonn, Germany}
+\affil[3]{HISKP, Rheinische Friedrich-Williams-Universit\"at Bonn, Germany}
 
 %\email{t.luu@fz-juelich.de}
 \date{}                                           % Activate to display a given date or no date
@@ -58,7 +61,7 @@ Forschungszentrum J\"ulich, Germany}
 email: \href{mailto:t.luu@fz-juelich.de}{t.luu@fz-juelich.de}
 \end{center}
 \abstract{
-We describe how we apply our Ising/HMC algorithm to Jason's toy problem.
+Simple documentation for \texttt{quboIsingHMC} package.
 }
 
 \thispagestyle{fancy}
@@ -66,6 +69,45 @@ We describe how we apply our Ising/HMC algorithm to Jason's toy problem.
 \clearpage{}
 %\tableofcontents
 %\newpage
+
+\section{Running the code}
+The codes are in the \texttt{src} directory.  Modify the \texttt{Makefile} to point to your relevant \texttt{C++} compiler.  The relevant files are 
+\begin{itemize}
+\item \texttt{quboIsingHMC.h} contains the necessary declarations.
+\item \texttt{quboIsingHMC.cpp} contains the codes for HMC and measurements.
+\item \texttt{anneal.cpp} is the driver that does simple annealing.  Modify this file (or make a new one) to change the parameters $\beta$, mass parameter $\mathcal{C}$ (described in the next section), number of thermalizations, number of measurements, etc. . .  Hopefully I commened this file enough for you to understand what's going on, and more importantly, to change it yourself.
+\item \texttt{input\_KandH.dat} is the input file that has the simple toy problem.  Modify this file (or make a new one) to investigate some other graph system.  It's pretty self-explanatory.
+\end{itemize}
+Just type ``make" and the \texttt{Makefile} will make the executable \texttt{anneal.exe}.  To run this executable, enter
+\begin{lstlisting}
+./anneal.exe input_KandH.dat > output.dat
+\end{lstlisting}
+Here the results are piped into the \texttt{output.dat} file.  Once you have produced results in the \texttt{output.dat} file, you can also run
+\begin{lstlisting}
+python3 histPsi.py output.dat
+python3 bootstrapData.py output.dat
+\end{lstlisting}
+The first will plot out a histogram of the $\langle\psi\rangle$ fields.  The second will attempt to get errors on $\langle E\rangle$, $\langle m\rangle$, and individual $\langle s_i\rangle$.  These are just my own personal routines to get some quick and dirty statistics and to see what's going on.  I'm sure you have more sophisticated routines. An example output from running \texttt{bootstrapData.py} is
+{\tiny
+\begin{lstlisting}
+# <E>     <dE>       <m>        <dm>
+1.53701004750845   0.039486985506858106   -0.47805792873174674   0.0015377626813233474
+
+# i   <S_i>     <dS_i>
+1   -0.22137956326262076   0.006769260613688914
+2   0.25949543710881184   0.006664269745196156
+3   -0.27070330907695045   0.006751158852773441
+4   -0.8892316241971162   0.0026959779928807403
+5   -0.24806636360105197   0.005744952355068994
+6   -1.0039863533419193   0.005359143190295709
+7   -0.9725337094797504   0.002067991089669495
+\end{lstlisting}}\noindent
+An example output from \texttt{histPsi.py} is shown in \autoref{fig:histPsi}.
+\begin{figure}
+\center
+\includegraphics[width=.8\columnwidth]{figures/histPsi.png}
+\caption{Example of histogram of average HS auxialiary field, $\langle \psi\rangle$. \label{fig:histPsi}}
+\end{figure}
 
 \section{Simple test problem}
 The Hamiltonian is\footnote{Note that the signs in front of $s_iK_{ij}s_j$ and $h_is_i$ are opposite of Jason's and Christopher's convention.}  
@@ -105,24 +147,6 @@ where $\epsilon$ and $m$ are the average energy and magnetization per site, resp
 \caption{Energy states $E_i$ and degeneracy $g_i$ for Hamiltonian defined in Eqs.~\eqref{eqn:H1}-\eqref{eqn:K}.\label{fig:histogram}}
 \end{figure}
 
-\section{Running the code}
-The codes are in the \texttt{src} directory.  Modify the \texttt{Makefile} to point to your relevant \texttt{C++} compiler.  The relevant files are 
-\begin{itemize}
-\item \texttt{quboIsingHMC.h} contains the necessary declarations.
-\item \texttt{quboIsingHMC.cpp} contains the codes for HMC and measurements.
-\item \texttt{anneal.cpp} is the driver that does simple annealing.  Modify this file (or make a new one) to change the parameters $\beta$, mass parameter $\mathcal{C}$ (described in the next section), number of thermalizations, number of measurements, etc. . .  Hopefully I commened this file enough for you to understand what's going on, and more importantly, to change it yourself.
-\item \texttt{input\_KandH.dat} is the input file that has the simple toy problem.  Modify this file (or make a new one) to investigate some other graph system.  It's pretty self-explanatory.
-\end{itemize}
-Just type ``make" and the \texttt{Makefile} will make the executable \texttt{anneal.exe}.  To run this executable, just type
-\begin{lstlisting}
-./anneal.exe input_KandH.dat > output.dat
-\end{lstlisting}
-Here the results are piped into the \texttt{output.dat} file.  Once you have produced results in the \texttt{output.dat} file, you can also run
-\begin{lstlisting}
-python3 histPhi.py output.dat
-python3 bootstrapData.py output.dat
-\end{lstlisting}
-The first will plot out a histogram of the $\langle\psi\rangle$ fields.  The second will attempt to get errors on $\langle E\rangle$, $\langle m\rangle$, and individual $\langle s_i\rangle$.  These are just my own personal routines to get some quick and dirty statistics out and see what's going on.  I'm sure you have more sophisticated routines.
 
 \section{Applying the HS transformation}
 The first thing we do is symmetrize the connectivity matrix, 
@@ -280,17 +304,8 @@ int ising::calcPdot(){
 \end{lstlisting}
 }
 
-\section{Results}
-%\begin{figure}
-%\includegraphics[width=.5\columnwidth]{jasonE.pdf}\includegraphics[width=.5\columnwidth]{jasonM.pdf}
-%\caption{HMC evolution of the internal energy (left) and magnetization (right) compared to their respective exact results.\label{fig:e and m results}}
-%\end{figure}
-%\begin{figure}
-%\includegraphics[width=\columnwidth]{jasonME.pdf}
-%\caption{Measurements of the internal energy (left) and magnetization (right) at different inverse temperature $\beta$ compared to their respective exact results.  Errors were obtained via bootstrap of 3000 measurements.\label{fig:e m beta results}}
-%\end{figure}
-%Look at \autoref{fig:e and m results} and \autoref{fig:e m beta results}.
-
+\section{Ergodicity}
+Actually, it's most likely we \emph{do not} want to fix any ergodicity problem.  We want the solution to fall into certain minima.  We can always re-heat and cool down again and see if we fall into any lower energy solution.  But it's good to explain what type of ergodicity problems there are with this formalism. . .
 %\newpage
 %\appendix
 

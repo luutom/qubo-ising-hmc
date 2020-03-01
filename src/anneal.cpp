@@ -42,10 +42,10 @@ int main(int argc, char** argv)
 
   // set number of MD steps.  Trajectory length is always set to 1
   numberOfMDSteps = 10;  // this gives a pretty high acceptance rate
-  ergJumpFrequency = -100; // please ignore this for now.  I did not discuss this in the notes.  Setting negative mean no erg jumps.
+  ergJumpFrequency = -100; // please ignore this for now.  I did not discuss this in the notes.  Setting negative means no erg jumps.
 
   // set inverse "temperature"
-  beta = 2.5;
+  beta = 3.0;
 
   // initialize remaining parameters before running. . .
   ising.initialize(beta,mass,numberOfMDSteps,ergJumpFrequency);
