@@ -40,3 +40,5 @@ quboIsingHMC.pdf
 *.aux
 *.out
 *.gz
+
+*.dat

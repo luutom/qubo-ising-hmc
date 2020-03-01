@@ -9,6 +9,7 @@
 \usepackage{lipsum}
 \usepackage{authblk}
 \usepackage{bbold}
+\usepackage{listings}
 %\usepackage{amsaddr}
 \usepackage{bm}
 \usepackage{epstopdf}
@@ -104,6 +105,25 @@ where $\epsilon$ and $m$ are the average energy and magnetization per site, resp
 \caption{Energy states $E_i$ and degeneracy $g_i$ for Hamiltonian defined in Eqs.~\eqref{eqn:H1}-\eqref{eqn:K}.\label{fig:histogram}}
 \end{figure}
 
+\section{Running the code}
+The codes are in the \texttt{src} directory.  Modify the \texttt{Makefile} to point to your relevant \texttt{C++} compiler.  The relevant files are 
+\begin{itemize}
+\item \texttt{quboIsingHMC.h} contains the necessary declarations.
+\item \texttt{quboIsingHMC.cpp} contains the codes for HMC and measurements.
+\item \texttt{anneal.cpp} is the driver that does simple annealing.  Modify this file (or make a new one) to change the parameters $\beta$, mass parameter $\mathcal{C}$ (described in the next section), number of thermalizations, number of measurements, etc. . .  Hopefully I commened this file enough for you to understand what's going on, and more importantly, to change it yourself.
+\item \texttt{input\_KandH.dat} is the input file that has the simple toy problem.  Modify this file (or make a new one) to investigate some other graph system.  It's pretty self-explanatory.
+\end{itemize}
+Just type ``make" and the \texttt{Makefile} will make the executable \texttt{anneal.exe}.  To run this executable, just type
+\begin{lstlisting}
+./anneal.exe input_KandH.dat > output.dat
+\end{lstlisting}
+Here the results are piped into the \texttt{output.dat} file.  Once you have produced results in the \texttt{output.dat} file, you can also run
+\begin{lstlisting}
+python3 histPhi.py output.dat
+python3 bootstrapData.py output.dat
+\end{lstlisting}
+The first will plot out a histogram of the $\langle\psi\rangle$ fields.  The second will attempt to get errors on $\langle E\rangle$, $\langle m\rangle$, and individual $\langle s_i\rangle$.  These are just my own personal routines to get some quick and dirty statistics out and see what's going on.  I'm sure you have more sophisticated routines.
+
 \section{Applying the HS transformation}
 The first thing we do is symmetrize the connectivity matrix, 
 \begin{equation}
@@ -194,6 +214,20 @@ O_{\langle E\rangle}[\bm\psi]=\mathcal{E}+\frac{\Lambda\mathcal{C}}{2}
 -\frac{1}{2\sqrt{\beta}}\bm h^{\rm T}\bm\psi
 -\frac{1}{2 \sqrt{\beta}} \sum_{i} \varphi_i \tanh \left(\sqrt{\beta} \varphi_i\right)\ .
 \end{equation}
+The subroutine that calculates this quantity is in \texttt{quboIsingHMC.cpp}:
+{\tiny
+\begin{lstlisting}
+double ising::calcE(){
+  // calculates energy
+
+  E1 =  mathcalE + Lambda*C/2.;
+  for (int i=0;i< Lambda; i++)
+    E1 +=  h[i]*k[i]/2. - h[i]*psi[i]/2./sqrtBeta - varphi[i]*tanh(sqrtBeta*varphi[i])/2.0/sqrtBeta;
+  return E1;
+    
+}
+\end{lstlisting}
+}
 
 \subsection{Average magnetization}
 The average magnetization is given by
@@ -205,6 +239,16 @@ As was done in the previous section, one just has to take derivatives, but now w
 \begin{equation}\label{eqn:m op}
 O_{\langle m\rangle}[\bm\psi]=\frac{1}{\sqrt{\beta}}\frac{1}{\Lambda}\sum_i\psi_i -\frac{1}{\Lambda}\sum_i\kappa_i\ .
 \end{equation}
+The subroutine that calculates this quantity is in \texttt{quboIsingHMC.cpp}:
+\begin{lstlisting}
+double ising::calcM(){
+  // calculates magnetization
+
+  M1 = mean(psi,Lambda)/sqrtBeta - kappa;
+  return M1;
+
+}
+\end{lstlisting}
 
 \section{HMC}
 The artificial Hamiltonian is
@@ -215,10 +259,26 @@ The force equations are (repeated indices are summed)
 \begin{equation}
 \begin{array}{l}
 {\dot{\psi_i}=\frac{\partial \mathcal{H}}{\partial p_i}=p_i} \\
-{\dot{p_i}=-\frac{\partial \mathcal{H}}{\partial\psi_i}=-\tilde{K}_{ij} \psi_j+\sqrt{\beta}h_i+\sqrt{\beta} \tilde{K}_{ij} \tanh (\sqrt{\beta} \tilde{K}_{jk} \psi_k)}\ .
+{\dot{p_i}=-\frac{\partial \mathcal{H}}{\partial\psi_i}=-\tilde{K}_{ij} \psi_j+\sqrt{\beta}h_i+\sqrt{\beta} \tilde{K}_{ij} \tanh (\sqrt{\beta} \tilde{K}_{jk} \psi_k)}\\
+{\quad\ =-\varphi_i+\sqrt{\beta}h_i+\sqrt{\beta} \tilde{K}_{ij} \tanh (\sqrt{\beta} \varphi_j)}\ .
 \end{array}
 \end{equation}
-No matrix inversion anywhere!
+We use $\bm \varphi=\tilde K\bm \psi$ in the last line above. No matrix inversion anywhere!   The calculation of the forces is done in \texttt{quboIsingHMC.cpp}, in the subroutine
+{\tiny
+\begin{lstlisting}
+int ising::calcPdot(){
+
+  sprsax(var,rld,psi,varphi2,Lambda);  // this gives varphi2[i] = K[i][j]*psi[j]
+  for(int i=0; i < Lambda; i++)  // this makes the vector varphi3[i] = sqrtBeta*tanh(sqrtBeta*K[i][j]*psi[j])
+    varphi3[i]=sqrtBeta*tanh(sqrtBeta*varphi2[i]);
+  sprsax(var,rld,varphi3,pdot,Lambda); // this gives pdot[i] = sqrtBeta*K[i][j]*tanh(spqrtJ*varphi2[j])
+  for(int i=0; i < Lambda; i++)
+    pdot[i] += -varphi2[i] + h[i]*sqrtBeta;
+
+  return 0;
+}
+\end{lstlisting}
+}
 
 \section{Results}
 %\begin{figure}

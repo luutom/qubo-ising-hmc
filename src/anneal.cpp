@@ -41,11 +41,11 @@ int main(int argc, char** argv)
   mass = 6.9; //   This is the coefficient "C" in my notes. Must be greater than 6.76978649856507 for simple toy problem.
 
   // set number of MD steps.  Trajectory length is always set to 1
-  numberOfMDSteps = 10;
+  numberOfMDSteps = 10;  // this gives a pretty high acceptance rate
   ergJumpFrequency = -100; // please ignore this for now.  I did not discuss this in the notes.  Setting negative mean no erg jumps.
 
   // set inverse "temperature"
-  beta = 2.0;
+  beta = 2.5;
 
   // initialize remaining parameters before running. . .
   ising.initialize(beta,mass,numberOfMDSteps,ergJumpFrequency);
@@ -77,16 +77,16 @@ int main(int argc, char** argv)
     ising.hmcTraj(traj);  // now run with accept/reject
   }
 
-  
+  // ok, now start taking statistics. . .
   for(traj=0;traj<=numOfTrajs;traj++){
     ising.hmcTraj(traj);
     if(traj%saveFrequency==0) {
-      m[index] = ising.calcM();
-      e[index] = ising.calcE();
-      psi[index] = ising.mean(ising.psi,ising.Lambda);
+      m[index] = ising.calcM();  // average magnetization per site
+      e[index] = ising.calcE();  // extensive energy
+      psi[index] = ising.mean(ising.psi,ising.Lambda);  // this is the mean value of the HS aux. field
       accP[index] = ising.mean(ising.acceptP,100);
       std::cout << traj << " " << ising.mean(ising.acceptP,100) << " " << psi[index] << " " << m[index] << " " << e[index];
-      for (int j = 0; j<ising.Lambda; j++) std::cout << " " << ising.Lambda*ising.calcSi(j);
+      for (int j = 0; j<ising.Lambda; j++) std::cout << " " << ising.calcSi(j);  // this loops through each spin site
       std::cout << std::endl;
       index += 1;
     }

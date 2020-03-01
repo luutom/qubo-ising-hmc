@@ -88,7 +88,7 @@ int ising::initialize(double Beta, double mass, int MDsteps, int ergJumps) {
 double ising::calcSi(int i){
   // calculates polarization on site i
   
-  return psi[i]/Lambda/sqrtBeta-k[i]/Lambda;
+  return psi[i]/sqrtBeta-k[i];
 }
 
 double ising::calcM(){
@@ -102,9 +102,9 @@ double ising::calcM(){
 double ising::calcE(){
   // calculates energy
 
-  E1 =  Lambda*C/2.+mathcalE;
+  E1 =  mathcalE + Lambda*C/2.;
   for (int i=0;i< Lambda; i++)
-    E1 += -h[i]*psi[i]/2./sqrtBeta - varphi[i]*tanh(sqrtBeta*varphi[i])/2.0/sqrtBeta + h[i]*k[i]/2.;
+    E1 +=  h[i]*k[i]/2. - h[i]*psi[i]/2./sqrtBeta - varphi[i]*tanh(sqrtBeta*varphi[i])/2.0/sqrtBeta;
   return E1;
     
 }
