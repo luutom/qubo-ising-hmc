@@ -37,8 +37,11 @@ cdef class Ising:
         Lambda_in = len(h_in)
 
         assert len(K_in) == Lambda_in
+        assert np.sum(np.abs(np.transpose(K_in) - K_in)) < 1.e-12
 
-        C_in = 6
+        eigs = np.linalg.eigvalsh(K_in)
+
+        C_in = max(0.0, eigs.min()) + 0.1
 
         self._cobj = new ising(
             Lambda_in,
