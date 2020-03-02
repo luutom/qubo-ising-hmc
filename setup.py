@@ -17,10 +17,15 @@ PY_SRC = path.join(ROOT, "qubo_ising_hmc")
 
 SOURCES = [
     path.join(SRC, "quboIsingHMC.cpp"),
-    path.join(PY_SRC, "qubo_ising_hmc.pyx"),
+    path.join(PY_SRC, "_qubo_ising_hmc.pyx"),
 ]
 
-EXTENSIONS = Extension(name="qubo_ising_hmc", sources=SOURCES,)
+EXTENSIONS = Extension(
+    name="qubo_ising_hmc._qubo_ising_hmc",
+    sources=SOURCES,
+    include_dirs=[SRC],
+    language="c++",
+)
 
 CWD = path.abspath(path.dirname(__file__))
 
