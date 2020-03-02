@@ -10,6 +10,7 @@ from distutils.extension import Extension
 from setuptools import setup, find_packages
 
 from Cython.Build import cythonize
+from numpy import get_include
 
 ROOT = path.abspath(path.dirname(__file__))
 SRC = path.join(ROOT, "src")
@@ -23,7 +24,7 @@ SOURCES = [
 EXTENSIONS = Extension(
     name="qubo_ising_hmc._qubo_ising_hmc",
     sources=SOURCES,
-    include_dirs=[SRC],
+    include_dirs=[SRC, get_include()],
     language="c++",
 )
 
