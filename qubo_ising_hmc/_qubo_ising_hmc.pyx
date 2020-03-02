@@ -24,12 +24,11 @@ cdef extern from "quboIsingHMC.h":
         vector[vector[double]] K_mat();
         vector[double] h;
         int Lambda;
-
-        # reset
-        # hmcThermTraj
-        # hmcTraj
-        # calcM
-        # calcE
+        vector[double]  energy;
+        vector[double]  acceptance;
+        vector[vector[double]] configs;
+        void thermalize(const size_t, const int, const int);
+        void run_hmc(const size_t, const size_t);
 
 
 cdef class Ising:
@@ -64,6 +63,7 @@ cdef class Ising:
             MDsteps_in,
             ergJumps_in
         )
+
 
     @property
     def kappa(self) -> float:
@@ -106,3 +106,33 @@ cdef class Ising:
         """
         """
         return np.array(self._cobj.h[0])
+
+
+    def thermalize(self,const size_t numOfTherm, const int numberOfMDSteps, const int ergJumpFrequency=-100):
+        """
+        """
+        self._cobj.thermalize(numOfTherm,numberOfMDSteps, ergJumpFrequency)
+
+    def run_hmc(self, const size_t numOfTrajs, const size_t saveFrequency=10):
+        """
+        """
+        self._cobj.run_hmc(numOfTrajs, saveFrequency)
+
+    @property
+    def configs(self) -> np.ndarray:
+        """
+        """
+        return np.array(self._cobj.configs)
+
+    @property
+    def acceptance(self) -> np.ndarray:
+        """
+        """
+        return np.array(self._cobj.acceptance)
+
+
+    @property
+    def energy(self) -> np.ndarray:
+        """
+        """
+        return np.array(self._cobj.energy)

@@ -89,7 +89,7 @@ public:
       const int ergJumpFrequency
   );
   // measure()
-  void run_hmc(const size_t numOfTrajs, const size_t saveFrequency=10);
+  void run_hmc(const size_t numOfTrajs, const size_t saveFrequency);
   // HMC run paramters
   std::vector<double> energy;
   std::vector<double> acceptance;
