@@ -7,15 +7,19 @@ ising::ising() {
 
 ising::ising(
   const int Lambda_in,  // total number of sites (= L^dim)
-  double **K_in,  // connectivity matrix (actually stores inverse of connectivity matrix)
-  double *h_in, // external h-field
+  const double **K_in,  // connectivity matrix (actually stores inverse of connectivity matrix)
+  const double *h_in, // external h-field
   const double mathcalE_in,  // this is an overall shift to the Hamiltonian
   const double C_in, // mass term to regulate the connectivity matrix
   const double beta, // self explanatory (incorporates beta)
   const double mass,
   const int MDsteps,
   const int ergJumps
-) : Lambda{Lambda_in}, K{K_in}, h{h_in},  mathcalE{mathcalE_in}, C{C_in} {
+) : Lambda{Lambda_in}, mathcalE{mathcalE_in}, C{C_in} {
+    for(int i=0; i < Lambda;++i) {
+      for(int j=0;j < Lambda; ++j) K[i][j] = K_in[i][j];
+      h[i] = h_in[i];
+    }
     initialize(beta, mass, MDsteps, ergJumps);
 }
 
