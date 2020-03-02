@@ -13,6 +13,17 @@
 class ising {
 public:
   ising();
+  ising( // initialize with parameters to avoid reading files
+      const int Lambda_in,  // total number of sites (= L^dim)
+      double **K_in,  // connectivity matrix (actually stores inverse of connectivity matrix)
+      double *h_in, // external h-field
+      const double mathcalE_in,  // this is an overall shift to the Hamiltonian
+      const double C_in, // mass term to regulate the connectivity matrix
+      const double beta_in, // self explanatory (incorporates beta)
+      const double mass_in,
+      const int MDsteps_in,
+      const int ergJumps_in
+  );
   ising(const ising& orig);
   virtual ~ising();
 
@@ -22,10 +33,11 @@ public:
   std::normal_distribution<double> normal; //(0.0,1.0);  /* for some reason, I can't initialize in the class.  But default has mean=0 and stddev=1.0 */
 
   int Lambda;  // total number of sites (= L^dim)
-  double mathcalE;  // this is an overall shift to the Hamiltonian
   double beta;  // self explanatory (incorporates beta)
   double sqrtBeta; // sqrt(beta)
   double **K = NULL;  // connectivity matrix (actually stores inverse of connectivity matrix)
+  double *h; // external h-field
+  double mathcalE;  // this is an overall shift to the Hamiltonian
   double C; // mass term to regulate the connectivity matrix
   double *psi;  // hubbard auxilliary field
   double *psiNew; // new proposed field
@@ -33,7 +45,6 @@ public:
   double *varphiNew;
   double *varphi2;
   double *varphi3;
-  double *h; // external h-field
   double *p;  // conjugate field to psi
   double *pdot; // time derivative (MD) of p
   double actS;  // action S[psi]
@@ -42,9 +53,9 @@ public:
   double kappa; // constant for version II (mean value of k[i])
 
   std::string version; // stores vesion of HMC calculation
-  
+
   double acceptP[100]; // array that keeps tally of accept/reject. . .
-  
+
   // other functions
   int initialize(double beta, double mass, int MDsteps, int ergJumps);  // this routine allocates all arrays and sets up the connectivity matrix
   int reset(double beta, int MDsteps, int ergJumps); // resets certain parameters
@@ -86,7 +97,7 @@ public:
   void atimes(int n, double *x, double *r, int itrnsp);
   double snrm(int n, double *sx, int itol);
   void linbcg(int n, double b[], double x[], int itol, double tol,int itmax, int *iter, double *err);
-  
+
   // sampling and simple statistical routines
   int sampleGaussian(double *p);
   double mean(double *p, int dim);
@@ -94,4 +105,3 @@ public:
 };
 
 #endif	/* QUBO_ISING_HMC */
-

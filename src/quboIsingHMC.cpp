@@ -5,6 +5,20 @@
 ising::ising() {
 }
 
+ising::ising(
+  const int Lambda_in,  // total number of sites (= L^dim)
+  double **K_in,  // connectivity matrix (actually stores inverse of connectivity matrix)
+  double *h_in, // external h-field
+  const double mathcalE_in,  // this is an overall shift to the Hamiltonian
+  const double C_in, // mass term to regulate the connectivity matrix
+  const double beta, // self explanatory (incorporates beta)
+  const double mass,
+  const int MDsteps,
+  const int ergJumps
+) : Lambda{Lambda_in}, K{K_in}, h{h_in},  mathcalE{mathcalE_in}, C{C_in} {
+    initialize(beta, mass, MDsteps, ergJumps);
+}
+
 ising::ising(const ising& orig) {
 }
 
@@ -23,7 +37,7 @@ int ising::reset(double Beta, int MDsteps, int ergJumps){
   return 0;
 }
 
-  
+
 int ising::initialize(double Beta, double mass, int MDsteps, int ergJumps) {
   /*
     Sets up arrays and so on
@@ -52,7 +66,7 @@ int ising::initialize(double Beta, double mass, int MDsteps, int ergJumps) {
 
   // after putting K in sparse format, no longer need K itself (again, this part will be removed in the future)
   for (int i = 0; i < Lambda; i++){
-    delete [] K[i]; 
+    delete [] K[i];
   }
   delete [] K;
 
@@ -66,13 +80,13 @@ int ising::initialize(double Beta, double mass, int MDsteps, int ergJumps) {
     b[i]=h[i];
     k[i]=0.0;
   }
-  
+
   int itcount;
   double err;
   std::cout << "# Solve K.k=h . . ." << std::endl;
   linbcg(Lambda,b,k,3,1.e-9,10000,&itcount,&err);
   std::cout << ". . . success!" << std::endl;
-  
+
   kappa = 0.0;
   for (int i=0;i<Lambda;i++) kappa += k[i];
   kappa /= Lambda;
@@ -82,13 +96,13 @@ int ising::initialize(double Beta, double mass, int MDsteps, int ergJumps) {
   varphiNew = new double [Lambda]; // proposed K*psiNew
   varphi2 = new double [Lambda]; // used for pdot calculation
   varphi3 = new double [Lambda]; // also used for pdot calculation
-    
+
   return 0;
 }
 
 double ising::calcSi(int i){
   // calculates polarization on site i
-  
+
   return psi[i]/sqrtBeta-k[i];
 }
 
@@ -107,13 +121,13 @@ double ising::calcE(){
   for (int i=0;i< Lambda; i++)
     E1 +=  h[i]*k[i]/2. - h[i]*psi[i]/2./sqrtBeta - varphi[i]*tanh(sqrtBeta*varphi[i])/2.0/sqrtBeta;
   return E1;
-    
+
 }
 
 int ising::ergJump(){
   // switch psi --> -psi
   for (int i = 0; i < Lambda; i++)
-    psiNew[i] = -psi[i]; 
+    psiNew[i] = -psi[i];
 
   return 0;
 }
@@ -122,7 +136,7 @@ int ising::hmcTraj(int traj){
   // perform one HMC trajectory (w/ accept/reject)
   double Hstart,Hend;
   double Sstart;
-  
+
   // first sample momentum with gaussian
   sampleGaussian(p);
   Hstart = calcH();
@@ -148,13 +162,13 @@ int ising::hmcTraj(int traj){
     actS = Sstart; // reset action to old value
     acceptP[traj%100]=0.0;
   }
-  
+
   return 0;
 }
 
 int ising::hmcThermTraj(int traj){
   // perform one HMC trajectory and always accept! (thermalization)
-    
+
   // first sample momentum with gaussian
   sampleGaussian(p);
   calcH();
@@ -173,7 +187,7 @@ int ising::hmcThermTraj(int traj){
     varphi[i] = varphiNew[i];
   }
   acceptP[traj%100]=1.0;
-  
+
   return 0;
 }
 
@@ -199,7 +213,7 @@ int ising::leapfrog() {
   calcPdot(psiNew);
   for(int i=0;i<Lambda;i++)
     p[i] -= (epsilon/2.0)*pdot[i];
-  
+
   return 0;
 }
 
@@ -229,7 +243,7 @@ int ising::calcPdot(double *psi){
 
 double ising::calcH(double *p, double *psi){
   // calculates artificial hamiltonian
-  
+
   artH = 0.0;
   for(int i=0; i < Lambda; i++)
     artH += p[i]*p[i]/2.0;
@@ -240,7 +254,7 @@ double ising::calcH(double *p, double *psi){
 
 double ising::calcH(){
   // calculates artificial hamiltonian
-  
+
   artH = 0.0;
   for(int i=0; i < Lambda; i++)
     artH += p[i]*p[i]/2.0;
@@ -260,7 +274,7 @@ double ising::calcS(double *psi){
     actS -= h[i]*psi[i]*sqrtBeta;
     actS -= log(2.*cosh(sqrtBeta*varphiNew[i]));
   }
-  
+
   return actS;
 }
 
@@ -275,7 +289,7 @@ double ising::calcS(){
     actS -= h[i]*psi[i]*sqrtBeta;
     actS -= log(2.*cosh(sqrtBeta*varphi[i]));
   }
-  
+
   return actS;
 }
 
@@ -294,7 +308,7 @@ int ising::readKandH(std::string Kfile) {
       K[i] = new double [Lambda];
       for (j=0; j < Lambda; j++)
 	K[i][j] = 0.0;  // set all entries to be zero initially
-    }  
+    }
     for (i=0;i<Lambda;++i) {
       for (j=0;j<Lambda;++j) {
 	inputFile >> value; K[i][j] = atof(value.c_str());
@@ -343,7 +357,7 @@ double ising::mean(double *m, int dim){
 
   for (int i=0;i<dim;i++)
     answer += m[i];
-  
+
   return answer/dim;
 }
 
@@ -363,7 +377,7 @@ double ising::variance(double *e, int dim){
 int ising::setUpSparseMatrix(double **m, int n)
 {
   //  int nmax;
-  
+
   nmax = getNmax(m, n);
   var  = new double [nmax];
   rld  = new int [nmax];
@@ -423,7 +437,7 @@ void ising::sprstx(double sa[], int ija[], double x[], double b[],
 		   int n)
 {
   int i,j,k;
-  
+
   if(ija[1 - 1] != n+2) std::cout << "sprstx: mismatched vector and matrix" << std::endl;
   for(i=1;i<=n;i++) b[i - 1]=sa[i - 1]*x[i - 1];
   for(i=1;i<=n;i++) {
@@ -433,7 +447,7 @@ void ising::sprstx(double sa[], int ija[], double x[], double b[],
     }
   }
 }
-  
+
 void ising::asolve(int n, double *b, double *x, int useless){
 
   int i;
@@ -482,7 +496,7 @@ void ising::linbcg(int n, double b[], double x[], int itol, double tol,
   zz = new double [n];
 
   bkden = bnrm = 1.0;
-  
+
   *iter=0;
   atimes(n,x,r,0);
   for (j=1;j<=n;j++) {
@@ -501,13 +515,13 @@ void ising::linbcg(int n, double b[], double x[], int itol, double tol,
     bnrm=snrm(n,z,itol);
     asolve(n,r,z,0);
     znrm=snrm(n,z,itol);
-  } 
+  }
   asolve(n,r,z,0);
   while (*iter <= itmax) {
     ++(*iter);
     zm1nrm=znrm;
     asolve(n,rr,zz,1);
-    for (bknum=0.0,j=1;j<=n;j++) 
+    for (bknum=0.0,j=1;j<=n;j++)
       {bknum += z[j - 1]*rr[j - 1];
       }
     if (*iter == 1) {
@@ -527,7 +541,7 @@ void ising::linbcg(int n, double b[], double x[], int itol, double tol,
 	pp[j - 1]=bk*pp[j - 1]+zz[j - 1];
       }
     }
-    bkden=bknum;                
+    bkden=bknum;
     atimes(n,p,z,0);
     for (akden=0.0,j=1;j<=n;j++) {
       akden += z[j - 1]*pp[j - 1];
@@ -568,7 +582,7 @@ void ising::linbcg(int n, double b[], double x[], int itol, double tol,
       break;
     }
   }
-  
+
   delete []  p;
   delete [] pp;
   delete []  r;
