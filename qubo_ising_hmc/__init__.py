@@ -26,4 +26,8 @@ class Ising(_Ising):  # pylint: disable=R0903
 
     Note:
         Multiplies with minus one before inserting in CPP class.
+
+    Todo:
+        * Test
+        * Think about matrix symmerty (Tom uses symmertrization)
     """
