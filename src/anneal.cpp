@@ -7,7 +7,7 @@
 using namespace std;
 
 /*
- * 
+ *
  */
 
 int main(int argc, char** argv)
@@ -49,7 +49,7 @@ int main(int argc, char** argv)
 
   // initialize remaining parameters before running. . .
   ising.initialize(beta,mass,numberOfMDSteps,ergJumpFrequency);
-  
+
   // some run parameters. . .
   numOfTherm = 500000;
   numOfTrajs = 500000;
@@ -63,11 +63,11 @@ int main(int argc, char** argv)
 
   double betaStart,betaEnd,deltaBeta;
 
-  // here we start the annealing process. 
+  // here we start the annealing process.
   betaStart=.2;  // we start at some high temperature
   betaEnd=beta;  // and this is our ending temperature
   deltaBeta=(betaEnd-betaStart)/numOfTherm;  // and we change in these small increments
-  
+
   for(traj=0;traj<=numOfTherm;traj++) {
     ising.reset(betaStart+traj * deltaBeta, numberOfMDSteps,ergJumpFrequency);  // this call resets the temperature, num of MD steps, and ergJump frequency
     ising.hmcThermTraj(traj);  // this does one hmc thermal trajectory  (i.e. it always accepts)
@@ -93,11 +93,11 @@ int main(int argc, char** argv)
   }
 
   // now do error analysis on observables. . .
-  
+
   double M,E;
 
   // NOTE:  I didn't code up any bootstrap routines.  YOU need to do this!
-  
+
   M = ising.mean(m,numOfTrajs/saveFrequency);
   E = ising.mean(e,numOfTrajs/saveFrequency);
   std::cout << "# beta = " << beta << std::endl;
@@ -105,6 +105,6 @@ int main(int argc, char** argv)
   std::cout << "# M = " << M << std::endl;
   std::cout << "# E = " << E << std::endl;
   std::cout << "# accept. rate = " << ising.mean(accP,numOfTrajs/saveFrequency) << std::endl;
-  
+
   return 0;
 }
