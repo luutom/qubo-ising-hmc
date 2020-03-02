@@ -15,8 +15,8 @@ public:
   ising();
   ising( // initialize with parameters to avoid reading files
       const int Lambda_in,  // total number of sites (= L^dim)
-      const double **K_in,  // connectivity matrix (actually stores inverse of connectivity matrix)
-      const double *h_in, // external h-field
+      const double ** const K_in,  // connectivity matrix (actually stores inverse of connectivity matrix)
+      const double * const h_in, // external h-field
       const double mathcalE_in,  // this is an overall shift to the Hamiltonian
       const double C_in, // mass term to regulate the connectivity matrix
       const double beta_in, // self explanatory (incorporates beta)
