@@ -17,7 +17,7 @@ for dat in data:
 # the histogram of the data
 n, bins, patches = plt.hist(phi, 50, density=1, facecolor='green', alpha=0.75)
 
-plt.xlabel(r'$\psi$')
+plt.xlabel(r'$\langle\psi\rangle$')
 plt.ylabel('Probability')
 #plt.axis([40, 160, 0, 0.03])
 plt.grid(True)

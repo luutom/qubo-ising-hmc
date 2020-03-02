@@ -8,3 +8,4 @@
 0.  0.  0.  0.  0.  0.  0.
 -2.5 -3.5 -2.5  1.  2.  4.  1.  # here is the external field
 11.5                            # this is the overall shift in the energy
+123571113                       # random number seed

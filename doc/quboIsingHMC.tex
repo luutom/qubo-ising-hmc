@@ -202,7 +202,7 @@ e^{-\frac{1}{2}\bm\psi^{\rm T} \tilde K\bm \psi+\sqrt{\beta}\bm h^{\rm T}\bm\psi
 e^{-S[\bm\psi]}\ ,
 \end{multline}
 where
-\begin{equation}
+\begin{equation}\label{eqn:psi action}
 S[\bm\psi]=\frac{1}{2}\bm\psi^{\rm T} \tilde K\bm \psi-\sqrt{\beta}\bm h^{\rm T}\bm\psi-\sum_i\log\left\{2\cosh\left(\sqrt{\beta}\left[\tilde{K}\bm \psi\right]_i\right)\right\}\ .
 \end{equation}
 The form of this expression is convenient since the only place where an inverse shows up is in $\beta \bm h^{\rm T} \tilde{K}^{-1} \bm h$ and this term is independent of the field $\psi$.  Even though this term does not impact the force equations in HMC, we still need it for obtaining the mean energy (and other quantities) when $h_i\ne 0$.  This will be more clear in the next subsections.  At the beginning of any calculation one can solve the linear equation (just once)
@@ -311,7 +311,27 @@ int ising::calcPdot(){
 }
 
 \section{Ergodicity}
-Actually, it's most likely we \emph{do not} want to fix any ergodicity problem.  We want the solution to fall into certain minima.  We can always re-heat and cool down again and see if we fall into any lower energy solution.  But it's good to explain what type of ergodicity problems there are with this formalism. . .
+Actually, it's most likely we \emph{do not} want to fix any ergodicity problem.  We want the solution to fall into certain minima.  We can always re-heat and cool down again and see if we fall into any lower energy solution.  But it's good to explain what type of ergodicity problems there are with this formalism. 
+
+To demonstrate our \emph{in practice}\footnote{We distinguish \emph{in practice} from \emph{formal}, where the latter refers to regions that are separated by infinite barriers, while the former has regions that are separated by exponentially large barriers.} ergodicity problem, we include an additional multiplicative parameter $\lambda$ to the external field,
+\begin{equation}
+-\lambda\bm h^{\rm T}\bm s\ ,
+\end{equation}
+where $\lambda$ varies from 0 to 1.  We perform all calculations at $\beta=5$ (this is cold).  The action in~\eqref{eqn:psi action} can be expressed as
+\begin{multline}
+S[\bm\psi]=\frac{1}{2}\bm\psi^{\rm T} \tilde K\bm \psi-\sqrt{\beta}\lambda\bm h^{\rm T}\bm\psi-\sum_i\log\left\{2\cosh\left(\sqrt{\beta}\left[\tilde{K}\bm \psi\right]_i\right)\right\}\\
+\equiv
+S_{h=0}[\bm\psi]-\sqrt{\beta}\lambda\bm h^{\rm T}\bm\psi\ .
+\end{multline}
+It is easy to see that $S_{h=0}[\bm\psi]$ is invariant under $\bm \psi\to -\bm \psi$.  Thus, when $\lambda=0$, one expects both cases $\bm \psi$ and $-\bm\psi$ to have the same weight.  When $\beta$ is large these two cases lead to a bi-modal distribution that is largely separated, as shown in the left panel of \autoref{fig:ergH00}.
+\begin{figure}
+\center
+\includegraphics[width=.5\columnwidth]{figures/ergH00.png}\includegraphics[width=.5\columnwidth]{figures/ergH05.png}
+\caption{Distribution of $\langle \psi\rangle$ for $\beta=5$ and $\lambda=0$ (left) and $\lambda=1/20$ (right) calculations.  Note the bi-modal distribution.\label{fig:ergH00}}
+\end{figure}
+HMC can (and does) get trapped in one of these distributions, and thus ergodicity is violated.  To escape these traps, we perform ``ergodicity jumps" every 100th or so trajectory where, instead of doing a standard HMC proposal, we propose $\bm\psi\to -\bm \psi$.  This allows us to move (or ``jump") from one distribution to another.
+
+The exact $\bm\psi\to -\bm \psi$ symmetry is broken for $\lambda\ne0$.  The right panel of \autoref{fig:ergH00} shows a calculation with $\lambda=1/20$.  We note that by the time $\lambda=1$, the external field $\bm h$ of this toy problem is so biased that the right distribution is no longer accessible even with our ``ergodicity jumps".
 %\newpage
 %\appendix
 

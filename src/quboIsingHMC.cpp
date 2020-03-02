@@ -69,9 +69,15 @@ int ising::initialize(double Beta, double mass, int MDsteps, int ergJumps) {
   
   int itcount;
   double err;
-  std::cout << "# Solve K.k=h . . ." << std::endl;
-  linbcg(Lambda,b,k,3,1.e-9,10000,&itcount,&err);
-  std::cout << "# . . . success!" << std::endl;
+  double absH;
+
+  absH = 0.0;
+  for(int i=0;i<Lambda;++i) absH += abs(h[i]);
+  if(absH >.00000001){  // only solve K.k = h if h is nonzero for all elements. . .
+    std::cout << "# Solve K.k=h . . ." << std::endl;
+    linbcg(Lambda,b,k,3,1.e-9,10000,&itcount,&err);
+    std::cout << "# . . . success!" << std::endl;
+  }
   
   kappa = 0.0;
   for (int i=0;i<Lambda;i++) kappa += k[i];
@@ -308,6 +314,8 @@ int ising::readKandH(std::string Kfile) {
     getline(inputFile,value);
     getline(inputFile,value);
     sscanf(value.c_str(), "%lf", &mathcalE);
+    getline(inputFile,value);
+    sscanf(value.c_str(),"%d",&seed);
   } else {
     cout << "# Could not load connectivity matrix!"<< endl;
     return 1;
@@ -327,6 +335,8 @@ int ising::readKandH(std::string Kfile) {
   // cout << endl;
   // cout << mathcalE << endl;
   inputFile.close();
+
+  generator.seed(seed);
 
   return 0;
 }
