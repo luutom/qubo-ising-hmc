@@ -14,7 +14,6 @@ cdef extern from "quboIsingHMC.h":
             const double,  # this is an overall shift to the Hamiltonian
             const double, # mass term to regulate the connectivity matrix
             const double, # self explanatory (incorporates beta)
-            const double,
             const int,
             const int
         ) except +
@@ -30,9 +29,8 @@ cdef class Ising:
         const vector[double] h_in, # external h-field
         const double mathcalE_in,  # this is an overall shift to the Hamiltonian
         const double beta_in, # self explanatory (incorporates beta)
-        const double mass_in,
-        const int MDsteps_in,
-        const int ergJumps_in
+        const int MDsteps_in = 10,
+        const int ergJumps_in = -100
     ):
         Lambda_in = len(h_in)
 
@@ -50,7 +48,6 @@ cdef class Ising:
             mathcalE_in,
             C_in,
             beta_in,
-            mass_in,
             MDsteps_in,
             ergJumps_in
         )

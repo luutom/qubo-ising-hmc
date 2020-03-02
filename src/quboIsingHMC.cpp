@@ -13,10 +13,9 @@ ising::ising(
   const double mathcalE_in,  // this is an overall shift to the Hamiltonian
   const double C_in, // mass term to regulate the connectivity matrix
   const double beta, // self explanatory (incorporates beta)
-  const double mass,
   const int MDsteps,
   const int ergJumps
-) : Lambda{Lambda_in}, mathcalE{mathcalE_in}, C{C_in} {
+) : Lambda{Lambda_in}, mathcalE{mathcalE_in} {
     K = new double* [Lambda];   // set up temp array to store connectivity matrix
     h = new double [Lambda];
     for(int i=0; i < Lambda;++i) {
@@ -24,7 +23,7 @@ ising::ising(
       for(int j=0;j < Lambda; ++j) K[i][j] = K_in[i][j];
       h[i] = h_in[i];
     }
-    initialize(beta, mass, MDsteps, ergJumps);
+    initialize(beta, C_in, MDsteps, ergJumps);
 }
 
 ising::ising(const ising& orig) {

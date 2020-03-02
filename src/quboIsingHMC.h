@@ -21,7 +21,6 @@ public:
       const double mathcalE_in,  // this is an overall shift to the Hamiltonian
       const double C_in, // mass term to regulate the connectivity matrix
       const double beta_in, // self explanatory (incorporates beta)
-      const double mass_in,
       const int MDsteps_in,
       const int ergJumps_in
   );
