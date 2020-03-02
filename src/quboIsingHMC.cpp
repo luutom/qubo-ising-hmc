@@ -17,7 +17,10 @@ ising::ising(
   const int MDsteps,
   const int ergJumps
 ) : Lambda{Lambda_in}, mathcalE{mathcalE_in}, C{C_in} {
+    K = new double* [Lambda];   // set up temp array to store connectivity matrix
+    h = new double [Lambda];
     for(int i=0; i < Lambda;++i) {
+      K[i] = new double [Lambda];
       for(int j=0;j < Lambda; ++j) K[i][j] = K_in[i][j];
       h[i] = h_in[i];
     }
