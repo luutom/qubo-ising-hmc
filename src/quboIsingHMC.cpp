@@ -44,6 +44,11 @@ int ising::reset(double Beta, int MDsteps, int ergJumps){
   return 0;
 }
 
+std::vector<std::vector<double>> const ising::K_mat(){
+    std::vector<std::vector<double>> kk(Lambda, std::vector<double>(Lambda, 0));
+    std::cout<<"Not implemented yet"<<std::endl;
+    return kk;
+}
 
 int ising::initialize(double Beta, double mass, int MDsteps, int ergJumps) {
   /*

@@ -1,5 +1,4 @@
 # distutils: language = c++
-
 import numpy as np
 cimport numpy as cnp
 from libcpp.vector cimport vector
@@ -17,6 +16,20 @@ cdef extern from "quboIsingHMC.h":
             const int,
             const int
         ) except +
+        double *k; # used in various places (most important for version II)
+        double kappa; # constant for version II (mean value of k[i])
+        double beta;
+        double C;
+        double mathcalE;
+        vector[vector[double]] K_mat();
+        vector[double] h;
+        int Lambda;
+
+        # reset
+        # hmcThermTraj
+        # hmcTraj
+        # calcM
+        # calcE
 
 
 cdef class Ising:
@@ -51,3 +64,45 @@ cdef class Ising:
             MDsteps_in,
             ergJumps_in
         )
+
+    @property
+    def kappa(self) -> float:
+        """The kappa parameter
+        """
+        return self._cobj.kappa
+
+    @property
+    def k(self) -> np.ndarray:
+        """The kappa parameter
+        """
+        return np.array(self._cobj.k[0])
+
+    @property
+    def c(self) -> float:
+        """
+        """
+        return self._cobj.C
+
+    @property
+    def epsilon(self) ->float:
+        """
+        """
+        return self._cobj.mathcalE
+
+    @property
+    def Lambda(self) ->int:
+        """
+        """
+        return self._cobj.Lambda
+
+    @property
+    def K(self) -> np.ndarray:
+        """
+        """
+        return self._cobj.K_mat()
+
+    @property
+    def h(self) -> np.ndarray:
+        """
+        """
+        return np.array(self._cobj.h[0])

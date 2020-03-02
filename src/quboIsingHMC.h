@@ -52,6 +52,8 @@ public:
   double *k; // used in various places (most important for version II)
   double kappa; // constant for version II (mean value of k[i])
 
+  std::vector<std::vector<double>> const K_mat(); // Wrap K to std matrix
+
   std::string version; // stores vesion of HMC calculation
 
   double acceptP[100]; // array that keeps tally of accept/reject. . .
