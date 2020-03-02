@@ -16,8 +16,7 @@ public:
   ising(const ising& orig);
   virtual ~ising();
 
-  std::mt19937 generator;
-  std::discrete_distribution<int> discrete {1,1};
+  std::mt19937 generator;  // mersenne_twister_engine
   std::uniform_real_distribution<double> uniform{0.0,1.0};  // uniform distribution from 0 to 1
   std::normal_distribution<double> normal{0.0,1.0};  /* normal distribution w/ mean=0 and stddev=1.0 */
 
