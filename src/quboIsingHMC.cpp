@@ -251,7 +251,7 @@ void ising::thermalize(
 
 void ising::run_hmc(const size_t numOfTrajs, const size_t saveFrequency){
     // ok, now start taking statistics.
-    std::vector<double> config;
+    std::vector<double> config(Lambda, 0);
 
     energy.clear();
     acceptance.clear();
@@ -262,10 +262,10 @@ void ising::run_hmc(const size_t numOfTrajs, const size_t saveFrequency){
       if(traj%saveFrequency==0) {
         energy.push_back(calcE());  // extensive energy
         acceptance.push_back(mean(acceptP,100));
-        // for(int i=0;i<Lambda;i++){
-        //     config[i] = psi[i];
-        // }
-        // configs.push_back(config);
+        for(int i=0;i<Lambda;i++){
+            config[i] = psi[i];
+        }
+        configs.push_back(config);
       }
     }
 }
