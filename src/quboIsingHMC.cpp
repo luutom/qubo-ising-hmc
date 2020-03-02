@@ -1,14 +1,15 @@
 #include "quboIsingHMC.h"
 #include <cmath>
 #include <iostream>
+#include <vector>
 
 ising::ising() {
 }
 
 ising::ising(
   const int Lambda_in,  // total number of sites (= L^dim)
-  const double ** const K_in,  // connectivity matrix (actually stores inverse of connectivity matrix)
-  const double * const h_in, // external h-field
+  const std::vector<std::vector<double>> K_in,  // connectivity matrix (actually stores inverse of connectivity matrix)
+  const std::vector<double> h_in, // external h-field
   const double mathcalE_in,  // this is an overall shift to the Hamiltonian
   const double C_in, // mass term to regulate the connectivity matrix
   const double beta, // self explanatory (incorporates beta)
