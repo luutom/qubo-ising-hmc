@@ -42,3 +42,6 @@ quboIsingHMC.pdf
 *.gz
 
 *.dat
+
+# python
+*.egg-info

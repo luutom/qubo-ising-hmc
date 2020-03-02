@@ -5,8 +5,22 @@ __author__ = "None"
 __version__ = "0.1.0"
 
 from os import path
+from distutils.extension import Extension
 
 from setuptools import setup, find_packages
+
+from Cython.Build import cythonize
+
+ROOT = path.abspath(path.dirname(__file__))
+SRC = path.join(ROOT, "src")
+PY_SRC = path.join(ROOT, "qubo_ising_hmc")
+
+SOURCES = [
+    path.join(SRC, "quboIsingHMC.cpp"),
+    path.join(PY_SRC, "qubo_ising_hmc.pyx"),
+]
+
+EXTENSIONS = Extension(name="qubo_ising_hmc", sources=SOURCES,)
 
 CWD = path.abspath(path.dirname(__file__))
 
@@ -28,4 +42,5 @@ setup(
     keywords=[],
     packages=find_packages(exclude=["docs", "tests"]),
     install_requires=REQUIREMENTS,
+    ext_modules=cythonize([EXTENSIONS]),
 )
