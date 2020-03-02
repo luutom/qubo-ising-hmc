@@ -37,33 +37,64 @@ cdef class Ising:
 
     def __cinit__(
         self,
-        const vector[vector[double]] K_in,  # connectivity matrix (actually stores inverse of connectivity matrix)
-        const vector[double] h_in, # external h-field
-        const double mathcalE_in,  # this is an overall shift to the Hamiltonian
-        const double beta_in, # self explanatory (incorporates beta)
-        const int MDsteps_in = 10,
-        const int ergJumps_in = -100
+        const vector[vector[double]] J,  # connectivity matrix (actually stores inverse of connectivity matrix)
+        const vector[double] h, # external h-field
+        const double offset,  # this is an overall shift to the Hamiltonian
+        const double beta, # self explanatory (incorporates beta)
+        const int md_steps = 10,
+        const int ergodicity_jumps = -100
     ):
-        Lambda_in = len(h_in)
+        Lambda_in = len(h)
 
-        assert len(K_in) == Lambda_in
-        assert np.sum(np.abs(np.transpose(K_in) - K_in)) < 1.e-12
+        self._J = J
+        self._h = h
+        self._offset = offset
+        self._beta = beta
+        self._md_steps = md_steps
+        self._ergodicity_jumps = ergodicity_jumps
 
-        eigs = np.linalg.eigvalsh(K_in)
+
+        assert len(J) == Lambda_in
+        assert np.sum(np.abs(np.transpose(J) - J)) < 1.e-12
+
+        eigs = np.linalg.eigvalsh(J)
 
         C_in = max(0.0, eigs.min()) + 0.1
 
         self._cobj = new ising(
             Lambda_in,
-            K_in,
-            h_in,
-            mathcalE_in,
+            J,
+            h,
+            offset,
             C_in,
-            beta_in,
-            MDsteps_in,
-            ergJumps_in
+            beta,
+            md_steps,
+            ergodicity_jumps
         )
 
+    @property
+    def J(self):
+        return self._J
+
+    @property
+    def h(self):
+        return self._h
+
+    @property
+    def offset(self):
+        return self._offset
+
+    @property
+    def beta(self):
+        return self._beta
+
+    @property
+    def md_steps(self):
+        return self._md_steps
+
+    @property
+    def ergodicity_jumps(self):
+        return self._ergodicity_jumps
 
     @property
     def kappa(self) -> float:
@@ -78,35 +109,10 @@ cdef class Ising:
         return np.array(self._cobj.k[0])
 
     @property
-    def c(self) -> float:
-        """
-        """
-        return self._cobj.C
-
-    @property
-    def epsilon(self) ->float:
-        """
-        """
-        return self._cobj.mathcalE
-
-    @property
     def Lambda(self) ->int:
         """
         """
         return self._cobj.Lambda
-
-    @property
-    def K(self) -> np.ndarray:
-        """
-        """
-        return self._cobj.K_mat()
-
-    @property
-    def h(self) -> np.ndarray:
-        """
-        """
-        return np.array(self._cobj.h[0])
-
 
     def thermalize(self,const size_t numOfTherm, const int numberOfMDSteps, const int ergJumpFrequency=-100):
         """
