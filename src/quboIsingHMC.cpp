@@ -229,6 +229,47 @@ int ising::leapfrog() {
   return 0;
 }
 
+void ising::thermalize(
+        const size_t numOfTherm,
+        const int numberOfMDSteps,
+        const int ergJumpFrequency
+){
+    // here we start the annealing process.
+    const double betaStart=.2;  // we start at some high temperature
+    const double betaEnd=beta;  // and this is our ending temperature
+    const double deltaBeta=(betaEnd-betaStart)/numOfTherm;  // and we change in these small increments
+
+    for(size_t traj=0;traj<=numOfTherm;traj++) {
+      reset(betaStart+traj * deltaBeta, numberOfMDSteps,ergJumpFrequency);  // this call resets the temperature, num of MD steps, and ergJump frequency
+      hmcThermTraj(traj);  // this does one hmc thermal trajectory  (i.e. it always accepts)
+    }
+    reset(beta, numberOfMDSteps, ergJumpFrequency);
+    for(size_t traj=0;traj<=numOfTherm;traj++) {
+      hmcTraj(traj);  // now run with accept/reject
+    }
+}
+
+void ising::run_hmc(const size_t numOfTrajs, const size_t saveFrequency){
+    // ok, now start taking statistics.
+    std::vector<double> config;
+
+    energy.clear();
+    acceptance.clear();
+    configs.clear();
+
+    for(size_t traj=0;traj<=numOfTrajs;traj++){
+      hmcTraj(traj);
+      if(traj%saveFrequency==0) {
+        energy.push_back(calcE());  // extensive energy
+        acceptance.push_back(mean(acceptP,100));
+        for(int i=0;i<Lambda;i++){
+            config[i] = psi[i];
+        }
+        configs.push_back(config);
+      }
+    }
+}
+
 int ising::calcPdot(){
 
   sprsax(var,rld,psi,varphi2,Lambda);  // this gives varphi2[i] = K[i][j]*psi[j]

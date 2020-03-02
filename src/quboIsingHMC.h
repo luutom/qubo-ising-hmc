@@ -57,7 +57,6 @@ public:
   std::string version; // stores vesion of HMC calculation
 
   double acceptP[100]; // array that keeps tally of accept/reject. . .
-
   // other functions
   int initialize(double beta, double mass, int MDsteps, int ergJumps);  // this routine allocates all arrays and sets up the connectivity matrix
   int reset(double beta, int MDsteps, int ergJumps); // resets certain parameters
@@ -82,6 +81,20 @@ public:
   double M1;
   double calcE(); // average energy
   double E1;
+
+  // interface
+  void thermalize(
+      const size_t numOfTherm,
+      const int numberOfMDSteps,
+      const int ergJumpFrequency
+  );
+  // measure()
+  void run_hmc(const size_t numOfTrajs, const size_t saveFrequency=10);
+  // HMC run paramters
+  std::vector<double> energy;
+  std::vector<double> acceptance;
+  std::vector<std::vector<double>> configs;
+
 
   //private:
 
