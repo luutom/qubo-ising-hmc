@@ -37,6 +37,9 @@ int ising::initialize(double Beta, double mass, int MDsteps, int ergJumps) {
   nMD = MDsteps;
   epsilon = 1./nMD;
 
+  numOfErgJumps=0;
+  numOfAccErgJumps=0;
+
   // allocate arrays. . .
   psi = new double [Lambda]; sampleGaussian(psi);
   psiNew = new double [Lambda];
@@ -119,7 +122,7 @@ double ising::calcE(){
 int ising::ergJump(){
   // switch psi --> -psi
   for (int i = 0; i < Lambda; i++)
-    psiNew[i] = -psi[i]; 
+    psiNew[i] = -psi[i] + 2 * sqrtBeta * k[i]; 
 
   return 0;
 }
@@ -136,6 +139,7 @@ int ising::hmcTraj(int traj){
 
   if(traj%ergJumpFreq == 0 && ergJumpFreq > 0){
     // do ergodicity jump
+    numOfErgJumps += 1;
     ergJump();
   } else {
     // now do leapfrog integration
@@ -150,6 +154,7 @@ int ising::hmcTraj(int traj){
       varphi[i] = varphiNew[i];
     }
     acceptP[traj%100]=1.0;
+    if(traj%ergJumpFreq == 0 && ergJumpFreq > 0) numOfAccErgJumps += 1;
   } else {
     actS = Sstart; // reset action to old value
     acceptP[traj%100]=0.0;

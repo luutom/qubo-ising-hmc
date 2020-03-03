@@ -331,7 +331,24 @@ It is easy to see that $S_{h=0}[\bm\psi]$ is invariant under $\bm \psi\to -\bm \
 \end{figure}
 HMC can (and does) get trapped in one of these distributions, and thus ergodicity is violated.  To escape these traps, we perform ``ergodicity jumps" every 100th or so trajectory where, instead of doing a standard HMC proposal, we propose $\bm\psi\to -\bm \psi$.  This allows us to move (or ``jump") from one distribution to another.
 
-The exact $\bm\psi\to -\bm \psi$ symmetry is broken for $\lambda\ne0$.  The right panel of \autoref{fig:ergH00} shows a calculation with $\lambda=1/20$.  We note that by the time $\lambda=1$, the external field $\bm h$ of this toy problem is so biased that the right distribution is no longer accessible even with our ``ergodicity jumps".
+The exact $\bm\psi\to -\bm \psi$ symmetry is broken for $\lambda\ne0$.  The right panel of \autoref{fig:ergH00} shows a calculation with $\lambda=1/20$.  Setting $\lambda=1$, the chance of accepting an ``ergodicity jump" is simply 
+\begin{equation}
+\exp\left(-S[-\bm\psi]+S[\bm \psi]\right)=\exp\left(-2\sqrt{\beta}\bm h^{\rm T}\bm\psi\right)\ .
+\end{equation}
+We note that for this toy problem, the external field $\bm h$ is so biased that the ratio above basically vanishes and so the right distribution is no longer accessible even with our ``ergodicity jumps".
+
+Another possibility (and probably better) is to perform a transformation that leaves 
+\begin{equation}
+S_g[\bm\psi]=\frac{1}{2}\bm\psi^{\rm T} \tilde K\bm \psi-\sqrt{\beta}\bm h^{\rm T}\bm\psi\ ,
+\end{equation}
+invariant.  It is simple to show that the transformation $\bm \psi\to-\bm \psi+2\sqrt{\beta}\bm \kappa$, where $\bm \kappa=\tilde K^{-1}\bm h$, leaves this expression invariant.  In this case it is the $\log$ terms of the action that break this invariance. The acceptance rate in this case is
+\begin{multline}
+\exp\left(\sum_i\left[\log\left\{2\cosh\left(\sqrt{\beta}\left[\tilde K\bm\psi\right]_i-2\beta h_i\right)\right\}-\log\left\{2\cosh\left(\sqrt{\beta}\left[\tilde K\bm\psi\right]_i\right)\right\}\right]\right)\\
+=\exp\left(\sum_i\log\left\{\frac{\cosh\left(\sqrt{\beta}\left[\tilde K\bm\psi\right]_i-2\beta h_i\right)}{\cosh\left(\sqrt{\beta}\left[\tilde K\bm\psi\right]_i\right)}\right\}\right)
+\ .
+\end{multline}
+
+%2\cosh\left\{\sqrt{\beta}\left[\tilde K\bm\psi\right]_i\right)\right\}\right]\
 %\newpage
 %\appendix
 

@@ -22,6 +22,7 @@ public:
 
   int Lambda;  // total number of sites (= L^dim)
   int seed;    // random number seed
+  int numOfErgJumps,numOfAccErgJumps;
   double mathcalE;  // this is an overall shift to the Hamiltonian
   double beta;  // self explanatory (incorporates beta)
   double sqrtBeta; // sqrt(beta)
