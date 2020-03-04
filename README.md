@@ -5,6 +5,7 @@
 ## Install
 Install via pip
 ```bash
+pip install [--user] -r requirements.txt
 pip install [-e] [--user] .
 ```
 
