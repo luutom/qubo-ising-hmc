@@ -55,16 +55,33 @@ cdef class Ising:
 
 
         assert len(J) == Lambda_in
-        assert np.sum(np.abs(np.transpose(J) - J)) < 1.e-12
+        assert np.abs(np.diag(J)).sum() < 1.e-12
 
-        eigs = np.linalg.eigvalsh(J)
+        if not np.sum(np.abs(np.transpose(J) - J)) < 1.e-12:
+            print("Symmetrisizing J. Ask Tom about the factor of 1/2")
+            J_sym = np.transpose(J) + J
+        else:
+            J_sym = J
 
-        C_in = max(0.0, eigs.min()) + 0.1
+        # Use the minus sign definition
+        J_sym *= -1
+        h_sym = np.array(h) * (-1)
+
+        eigs = np.linalg.eigvalsh(J_sym)
+
+        # Slightly shift C_in to avoid zero
+        C_in = - min(0.0, eigs.min()) + 0.1
+
+        print("J =", J_sym)
+        print("h_sym =", h_sym)
+        print("offset =", offset)
+        print("C_in =", C_in)
+        print("beta =", beta)
 
         self._cobj = new ising(
             Lambda_in,
-            J,
-            h,
+            J_sym,
+            h_sym,
             offset,
             C_in,
             beta,
@@ -106,7 +123,7 @@ cdef class Ising:
     def k(self) -> np.ndarray:
         """The kappa parameter
         """
-        return np.array(self._cobj.k[0])
+        return np.array([self._cobj.k[i] for i in range(self.Lambda)])
 
     @property
     def Lambda(self) ->int:
