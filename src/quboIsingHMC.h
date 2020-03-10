@@ -16,7 +16,7 @@ public:
   ising();
   ising( // initialize with parameters to avoid reading files
       const int Lambda_in,  // total number of sites (= L^dim)
-      const std::vector<std::vector<double>> K_in,  // connectivity matrix (actually stores inverse of connectivity matrix)
+      const std::vector<std::vector<double> > K_in,  // connectivity matrix (actually stores inverse of connectivity matrix)
       const std::vector<double> h_in, // external h-field
       const double mathcalE_in,  // this is an overall shift to the Hamiltonian
       const double C_in, // mass term to regulate the connectivity matrix
@@ -27,12 +27,14 @@ public:
   ising(const ising& orig);
   virtual ~ising();
 
-  std::default_random_engine generator;
-  std::discrete_distribution<int> discrete {1,1};
-  std::uniform_real_distribution<double> uniform; //(0.0,1.0);
-  std::normal_distribution<double> normal; //(0.0,1.0);  /* for some reason, I can't initialize in the class.  But default has mean=0 and stddev=1.0 */
+  std::mt19937 generator;
+  std::discrete_distribution<int> discrete {1,1};  
+  std::uniform_real_distribution<double> uniform {0.0,1.0};
+  std::normal_distribution<double> normal {0.0,1.0};  /* mean=0 and stddev=1.0 */
 
   int Lambda;  // total number of sites (= L^dim)
+  int totNumErgJumps;  // total number attempted erg jumps
+  int ergJumpTallies[2];  // tallies of which erg jump was successful
   double beta;  // self explanatory (incorporates beta)
   double sqrtBeta; // sqrt(beta)
   double **K = NULL;  // connectivity matrix (actually stores inverse of connectivity matrix)
@@ -52,7 +54,7 @@ public:
   double *k; // used in various places (most important for version II)
   double kappa; // constant for version II (mean value of k[i])
 
-  std::vector<std::vector<double>> const K_mat(); // Wrap K to std matrix
+  std::vector<std::vector<double> > const K_mat(); // Wrap K to std matrix
 
   std::string version; // stores vesion of HMC calculation
 
@@ -93,7 +95,7 @@ public:
   // HMC run paramters
   std::vector<double> energy;
   std::vector<double> acceptance;
-  std::vector<std::vector<double>> configs;
+  std::vector<std::vector<double> > configs;
 
 
   //private:

@@ -8,7 +8,7 @@ ising::ising() {
 
 ising::ising(
   const int Lambda_in,  // total number of sites (= L^dim)
-  const std::vector<std::vector<double>> K_in,  // connectivity matrix (actually stores inverse of connectivity matrix)
+  const std::vector<std::vector<double> > K_in,  // connectivity matrix (actually stores inverse of connectivity matrix)
   const std::vector<double> h_in, // external h-field
   const double mathcalE_in,  // this is an overall shift to the Hamiltonian
   const double C_in, // mass term to regulate the connectivity matrix
@@ -44,8 +44,8 @@ int ising::reset(double Beta, int MDsteps, int ergJumps){
   return 0;
 }
 
-std::vector<std::vector<double>> const ising::K_mat(){
-    std::vector<std::vector<double>> kk(Lambda, std::vector<double>(Lambda, 0));
+std::vector<std::vector<double> > const ising::K_mat(){
+    std::vector<std::vector<double> > kk(Lambda, std::vector<double>(Lambda, 0));
     std::cout<<"Not implemented yet"<<std::endl;
     return kk;
 }
@@ -63,6 +63,10 @@ int ising::initialize(double Beta, double mass, int MDsteps, int ergJumps) {
   nMD = MDsteps;
   epsilon = 1./nMD;
 
+  totNumErgJumps=0;
+  ergJumpTallies[0]=0;
+  ergJumpTallies[1]=0;
+  
   // allocate arrays. . .
   psi = new double [Lambda]; sampleGaussian(psi);
   psiNew = new double [Lambda];
@@ -97,7 +101,7 @@ int ising::initialize(double Beta, double mass, int MDsteps, int ergJumps) {
   double err;
   std::cout << "# Solve K.k=h . . ." << std::endl;
   linbcg(Lambda,b,k,3,1.e-9,10000,&itcount,&err);
-  std::cout << ". . . success!" << std::endl;
+  std::cout << "# . . . success!" << std::endl;
 
   kappa = 0.0;
   for (int i=0;i<Lambda;i++) kappa += k[i];
@@ -137,17 +141,33 @@ double ising::calcE(){
 }
 
 int ising::ergJump(){
-  // switch psi --> -psi
-  for (int i = 0; i < Lambda; i++)
-    psiNew[i] = -psi[i];
+  // three possible erg jumps:  
+  //        psi --> -psi
+  //        psi --> -psi + 2*sqrtBeta*k
+  // recall that k = invK*h
+  int ergJ;
 
-  return 0;
+  ergJ = discrete(generator); // choose the cases randomly (but with equal weigth)
+
+  switch(ergJ) {
+  case 0:
+    for (int i = 0; i < Lambda; i++)
+      psiNew[i] = -psi[i];
+    break;
+  case 1:
+    for (int i = 0; i < Lambda; i++)
+      psiNew[i] = -psi[i] + 2*sqrtBeta*k[i];
+    break;
+  }
+    
+  return ergJ;
 }
 
 int ising::hmcTraj(int traj){
   // perform one HMC trajectory (w/ accept/reject)
   double Hstart,Hend;
   double Sstart;
+  int whichErgJump = 0;
 
   // first sample momentum with gaussian
   sampleGaussian(p);
@@ -156,7 +176,8 @@ int ising::hmcTraj(int traj){
 
   if(traj%ergJumpFreq == 0 && ergJumpFreq > 0){
     // do ergodicity jump
-    ergJump();
+    whichErgJump = ergJump();
+    totNumErgJumps += 1;
   } else {
     // now do leapfrog integration
     leapfrog();
@@ -170,6 +191,7 @@ int ising::hmcTraj(int traj){
       varphi[i] = varphiNew[i];
     }
     acceptP[traj%100]=1.0;
+    if(traj%ergJumpFreq == 0 && ergJumpFreq > 0) ergJumpTallies[whichErgJump] += 1;
   } else {
     actS = Sstart; // reset action to old value
     acceptP[traj%100]=0.0;
