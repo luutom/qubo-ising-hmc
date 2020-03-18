@@ -20,6 +20,7 @@ cdef extern from "quboIsingHMC.h":
         double kappa; # constant for version II (mean value of k[i])
         double beta;
         double C;
+        double vu;
         double mathcalE;
         vector[vector[double]] K_mat();
         vector[double] h;
@@ -27,8 +28,11 @@ cdef extern from "quboIsingHMC.h":
         vector[double]  energy;
         vector[double]  acceptance;
         vector[vector[double]] configs;
-        void thermalize(const size_t, const int, const int);
-        void run_hmc(const size_t, const size_t);
+        void thermalize(const double, const size_t, const int, const int);
+        void anneal(const double, const double, const size_t, const int, const int);
+        void run_hmc(const double, const size_t, const int, const int, const size_t);
+        void annealNoH(const double, const double, const size_t, const int, const int);
+        void turnOnH(const double, const size_t, const int, const int);
 
 
 cdef class Ising:
@@ -42,7 +46,8 @@ cdef class Ising:
         const double offset,  # this is an overall shift to the Hamiltonian
         const double beta, # self explanatory (incorporates beta)
         const int md_steps = 10,
-        const int ergodicity_jumps = -100
+        const int ergodicity_jumps = -100,
+        const double vu = 1.0
     ):
         Lambda_in = len(h)
 
@@ -58,7 +63,6 @@ cdef class Ising:
         assert np.abs(np.diag(J)).sum() < 1.e-12
 
         if not np.sum(np.abs(np.transpose(J) - J)) < 1.e-12:
-            print("Symmetrisizing J. Ask Tom about the factor of 1/2")
             J_sym = np.transpose(J) + J
         else:
             J_sym = J
@@ -131,15 +135,30 @@ cdef class Ising:
         """
         return self._cobj.Lambda
 
-    def thermalize(self,const size_t numOfTherm, const int numberOfMDSteps, const int ergJumpFrequency=-100):
+    def thermalize(self,const double beta, const size_t numOfTherm, const int numberOfMDSteps, const int ergJumpFrequency=-100):
         """
         """
-        self._cobj.thermalize(numOfTherm,numberOfMDSteps, ergJumpFrequency)
+        self._cobj.thermalize(beta, numOfTherm,numberOfMDSteps, ergJumpFrequency)
 
-    def run_hmc(self, const size_t numOfTrajs, const size_t saveFrequency=10):
+    def anneal(self,const double initBeta, const double finalBeta, const size_t numOfTherm, const int numberOfMDSteps, const int ergJumpFrequency=-100):
         """
         """
-        self._cobj.run_hmc(numOfTrajs, saveFrequency)
+        self._cobj.anneal(initBeta, finalBeta, numOfTherm,numberOfMDSteps, ergJumpFrequency)
+
+    def run_hmc(self, const double beta, const size_t numOfTrajs, const int numberOfMDSteps, const int ergJumpFrequency=-100, const size_t saveFrequency=10):
+        """
+        """
+        self._cobj.run_hmc(beta, numOfTrajs, numberOfMDSteps, ergJumpFrequency, saveFrequency)
+
+    def annealNoH(self, const double initBeta, const double finalBeta, const size_t numOfTherm, const int numberOfMDSteps, const int ergJumpFrequency=-100):
+        """
+        """
+        self._cobj.annealNoH(initBeta, finalBeta, numOfTherm, numberOfMDSteps, ergJumpFrequency)
+
+    def turnOnH(self,const double beta, const size_t numOfTherm, const int numberOfMDSteps, const int ergJumpFrequency):
+        """
+        """
+        self._cobj.turnOnH(beta, numOfTherm, numberOfMDSteps, ergJumpFrequency)
 
     @property
     def configs(self) -> np.ndarray:

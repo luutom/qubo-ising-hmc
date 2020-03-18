@@ -41,6 +41,22 @@ int ising::reset(double Beta, int MDsteps, int ergJumps){
   epsilon = 1./nMD;
   ergJumpFreq = ergJumps;
 
+  vu = 1.0; // adiabatic parameter for external field
+
+  return 0;
+}
+
+int ising::reset(double Beta, int MDsteps, int ergJumps, double lambda){
+  // resets certain parameters
+  beta = Beta;
+  sqrtBeta = sqrt(beta);
+
+  nMD = MDsteps;
+  epsilon = 1./nMD;
+  ergJumpFreq = ergJumps;
+
+  vu = lambda; // adiabatic parameter for external field
+
   return 0;
 }
 
@@ -119,13 +135,13 @@ int ising::initialize(double Beta, double mass, int MDsteps, int ergJumps) {
 double ising::calcSi(int i){
   // calculates polarization on site i
 
-  return psi[i]/sqrtBeta-k[i];
+  return psi[i]/sqrtBeta-vu*k[i];
 }
 
 double ising::calcM(){
   // calculates magnetization
 
-  M1 = mean(psi,Lambda)/sqrtBeta - kappa;
+  M1 = mean(psi,Lambda)/sqrtBeta - vu*kappa;
   return M1;
 
 }
@@ -135,7 +151,7 @@ double ising::calcE(){
 
   E1 =  mathcalE + Lambda*C/2.;
   for (int i=0;i< Lambda; i++)
-    E1 +=  h[i]*k[i]/2. - h[i]*psi[i]/2./sqrtBeta - varphi[i]*tanh(sqrtBeta*varphi[i])/2.0/sqrtBeta;
+    E1 +=  vu*h[i]*vu*k[i]/2. - vu*h[i]*psi[i]/2./sqrtBeta - varphi[i]*tanh(sqrtBeta*varphi[i])/2.0/sqrtBeta;
   return E1;
 
 }
@@ -156,7 +172,7 @@ int ising::ergJump(){
     break;
   case 1:
     for (int i = 0; i < Lambda; i++)
-      psiNew[i] = -psi[i] + 2*sqrtBeta*k[i];
+      psiNew[i] = -psi[i] + 2*sqrtBeta*vu*k[i];
     break;
   }
     
@@ -252,32 +268,56 @@ int ising::leapfrog() {
 }
 
 void ising::thermalize(
-        const size_t numOfTherm,
-        const int numberOfMDSteps,
-        const int ergJumpFrequency
+		       const double beta,
+		       const size_t numOfTherm,
+		       const int numberOfMDSteps,
+		       const int ergJumpFrequency
+		       ){
+  // here we just thermalize, accepting everything 
+
+  reset(beta, numberOfMDSteps,ergJumpFrequency);  // this call resets the temperature, num of MD steps, and ergJump frequency
+  for(size_t traj=0;traj<=numOfTherm;traj++) {
+    hmcThermTraj(traj);  // this does one hmc thermal trajectory  (i.e. it always accepts)
+  }
+}
+
+void ising::anneal(
+		   const double initBeta,
+		   const double finalBeta,
+		   const size_t numOfTherm,
+		   const int numberOfMDSteps,
+		   const int ergJumpFrequency
 ){
     // here we start the annealing process.
-    const double betaStart=.2;  // we start at some high temperature
-    const double betaEnd=beta;  // and this is our ending temperature
+    const double betaStart= initBeta;  // we start at some high temperature
+    const double betaEnd= finalBeta;  // and this is our ending temperature
     const double deltaBeta=(betaEnd-betaStart)/numOfTherm;  // and we change in these small increments
 
     for(size_t traj=0;traj<=numOfTherm;traj++) {
       reset(betaStart+traj * deltaBeta, numberOfMDSteps,ergJumpFrequency);  // this call resets the temperature, num of MD steps, and ergJump frequency
       hmcThermTraj(traj);  // this does one hmc thermal trajectory  (i.e. it always accepts)
     }
-    reset(beta, numberOfMDSteps, ergJumpFrequency);
-    for(size_t traj=0;traj<=numOfTherm;traj++) {
-      hmcTraj(traj);  // now run with accept/reject
-    }
+    //    reset(finalBeta, numberOfMDSteps, ergJumpFrequency,lambda);
+    //    for(size_t traj=0;traj<=numOfTherm;traj++) {
+    //      hmcTraj(traj);  // now run with accept/reject
+    //    }
 }
 
-void ising::run_hmc(const size_t numOfTrajs, const size_t saveFrequency){
+void ising::run_hmc(
+		    const double beta,
+		    const size_t numOfTrajs,
+		    const int numberOfMDSteps,
+		    const int ergJumpFrequency,
+		    const size_t saveFrequency
+		    ){
     // ok, now start taking statistics.
     std::vector<double> config(Lambda, 0);
 
     energy.clear();
     acceptance.clear();
     configs.clear();
+
+    reset(beta, numberOfMDSteps, ergJumpFrequency);
 
     for(size_t traj=0;traj<=numOfTrajs;traj++){
       hmcTraj(traj);
@@ -292,6 +332,45 @@ void ising::run_hmc(const size_t numOfTrajs, const size_t saveFrequency){
     }
 }
 
+void ising::annealNoH(
+		   const double initBeta,
+		   const double finalBeta,
+		   const size_t numOfTherm,
+		   const int numberOfMDSteps,
+		   const int ergJumpFrequency
+){
+    // here we start the annealing process.
+    const double betaStart= initBeta;  // we start at some high temperature
+    const double betaEnd= finalBeta;  // and this is our ending temperature
+    const double deltaBeta=(betaEnd-betaStart)/numOfTherm;  // and we change in these small increments
+
+    for(size_t traj=0;traj<=numOfTherm;traj++) {
+      reset(betaStart+traj * deltaBeta, numberOfMDSteps,ergJumpFrequency,0.0);  // this call resets the temperature, num of MD steps, and ergJump frequency
+      hmcTraj(traj);  // this does one hmc trajectory 
+    }
+    //    reset(finalBeta, numberOfMDSteps, ergJumpFrequency,lambda);
+    //    for(size_t traj=0;traj<=numOfTherm;traj++) {
+    //      hmcTraj(traj);  // now run with accept/reject
+    //    }
+}
+
+void ising::turnOnH(
+		    const double beta,
+		    const size_t numOfTherm,
+		    const int numberOfMDSteps,
+		    const int ergJumpFrequency
+		    ){
+  // here we adiabatically turn on H
+  const double vuStart= 0.0;  // we start at some high temperature
+  const double vuEnd= 1.0;  // and this is our ending temperature
+  const double deltaVu=(vuEnd-vuStart)/numOfTherm;  // and we change in these small increments
+
+  for(size_t traj=0;traj<=numOfTherm;traj++) {
+    reset(beta, numberOfMDSteps,ergJumpFrequency,vuStart+traj * deltaVu);  // this call resets the temperature, num of MD steps, and ergJump frequency
+    hmcTraj(traj);  // this does one hmc trajectory
+  }
+}
+
 int ising::calcPdot(){
 
   sprsax(var,rld,psi,varphi2,Lambda);  // this gives varphi2[i] = K[i][j]*psi[j]
@@ -299,7 +378,7 @@ int ising::calcPdot(){
     varphi3[i]=sqrtBeta*tanh(sqrtBeta*varphi2[i]);
   sprsax(var,rld,varphi3,pdot,Lambda); // this gives pdot[i] = sqrtBeta*K[i][j]*tanh(spqrtJ*varphi2[j])
   for(int i=0; i < Lambda; i++)
-    pdot[i] += -varphi2[i] + h[i]*sqrtBeta;
+    pdot[i] += -varphi2[i] + vu*h[i]*sqrtBeta;
 
   return 0;
 }
@@ -311,7 +390,7 @@ int ising::calcPdot(double *psi){
     varphi3[i]=sqrtBeta*tanh(sqrtBeta*varphi2[i]);
   sprsax(var,rld,varphi3,pdot,Lambda); // this gives pdot[i] = sqrtBeta*K[i][j]*tanh(sqrtBeta*varphi2[j])
   for(int i=0; i < Lambda; i++)     // now add the remaining terms
-    pdot[i] += -varphi2[i] + h[i]*sqrtBeta;
+    pdot[i] += -varphi2[i] + vu*h[i]*sqrtBeta;
 
   return 0;
 }
@@ -346,7 +425,7 @@ double ising::calcS(double *psi){
   sprsax(var,rld,psi,varphiNew,Lambda);  // this gives varphi[i] = K[i][j]*psi[j]
   for(int i=0;i < Lambda; i++){
     actS += psi[i]*varphiNew[i]/2.0;
-    actS -= h[i]*psi[i]*sqrtBeta;
+    actS -= vu*h[i]*psi[i]*sqrtBeta;
     actS -= log(2.*cosh(sqrtBeta*varphiNew[i]));
   }
 
@@ -361,7 +440,7 @@ double ising::calcS(){
   sprsax(var,rld,psi,varphi,Lambda);  // this gives varphi[i] = K[i][j]*psi[j]
   for(int i=0;i < Lambda; i++){
     actS += psi[i]*varphi[i]/2.0;
-    actS -= h[i]*psi[i]*sqrtBeta;
+    actS -= vu*h[i]*psi[i]*sqrtBeta;
     actS -= log(2.*cosh(sqrtBeta*varphi[i]));
   }
 
@@ -408,13 +487,7 @@ int ising::readKandH(std::string Kfile) {
       K[j][i]=K[i][j];
     }
   }
-  // for(i=0;i<Lambda;++i) {
-  //   for(j=0;j<Lambda;++j) cout << K[i][j] << " ";
-  //   cout << endl;
-  // }
-  // for(i=0;i<Lambda;++i) cout << h[i] << " ";
-  // cout << endl;
-  // cout << mathcalE << endl;
+
   inputFile.close();
 
   return 0;

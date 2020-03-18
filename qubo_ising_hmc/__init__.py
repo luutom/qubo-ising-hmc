@@ -29,5 +29,5 @@ class Ising(_Ising):  # pylint: disable=R0903
 
     Todo:
         * Test
-        * Think about matrix symmerty (Tom uses symmertrization)
+        * Think about matrix symmetry
     """

@@ -53,6 +53,7 @@ public:
   double artH;  // artificial Hamiltonian: p^2/2 + S[psi]
   double *k; // used in various places (most important for version II)
   double kappa; // constant for version II (mean value of k[i])
+  double vu;  // adiabatic parameter for the external field (should take values between 0 and 1)
 
   std::vector<std::vector<double> > const K_mat(); // Wrap K to std matrix
 
@@ -62,6 +63,7 @@ public:
   // other functions
   int initialize(double beta, double mass, int MDsteps, int ergJumps);  // this routine allocates all arrays and sets up the connectivity matrix
   int reset(double beta, int MDsteps, int ergJumps); // resets certain parameters
+  int reset(double beta, int MDsteps, int ergJumps, double lambda); // resets certain parameters (includes adiabatic parameter lambda for external fields)
   int readKandH(std::string Kfile);  // this reads in the connectivity matrix K_ij and external field h_i and rank of matrix
 
   int ergJumpFreq; // frequency in which to do ergJumps (i.e. psi --> -psi)
@@ -86,12 +88,46 @@ public:
 
   // interface
   void thermalize(
-      const size_t numOfTherm,
-      const int numberOfMDSteps,
-      const int ergJumpFrequency
-  );
+		  const double beta,
+		  const size_t numOfTherm,
+		  const int numberOfMDSteps,
+		  const int ergJumpFrequency
+		  );
+
+  // anneal
+  void anneal(
+	      const double initBeta,
+	      const double finalBeta,
+	      const size_t numOfTherm,
+	      const int numberOfMDSteps,
+	      const int ergJumpFrequency
+	      );
+  
   // measure()
-  void run_hmc(const size_t numOfTrajs, const size_t saveFrequency);
+  void run_hmc(
+	       const double beta,
+	       const size_t numOfTrajs,
+	       const int numberOfMDSteps,
+	       const int ergJumpFrequency,
+	       const size_t saveFrequency
+	       );
+
+  // anneal w/ NO external fields
+  void annealNoH(
+	      const double initBeta,
+	      const double finalBeta,
+	      const size_t numOfTherm,
+	      const int numberOfMDSteps,
+	      const int ergJumpFrequency
+	      );
+
+  void turnOnH(
+	       const double beta,
+	       const size_t numOfTherm,
+	       const int numberOfMDSteps,
+	       const int ergJumpFrequency
+	       );
+  
   // HMC run paramters
   std::vector<double> energy;
   std::vector<double> acceptance;

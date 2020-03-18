@@ -32,7 +32,7 @@ int main(int argc, char** argv)
   // since Jason and Christopher define the hamiltonian using a different sign convention, we need to multiply the K and h terms with an overall minus sign
   for(int i=0; i < ising.Lambda;++i) {
     for(int j=0;j < ising.Lambda; ++j) ising.K[i][j] *= -1;
-    ising.h[i] *= -1;
+    ising.h[i] *= -.05;
   }
 
   // Now this parameter is IMPORTANT!  This is the overall mass term that must be added to the symmetrized connectivity matrix that makes the HS
@@ -41,17 +41,17 @@ int main(int argc, char** argv)
   mass = 6.9; //   This is the coefficient "C" in my notes. Must be greater than 6.76978649856507 for simple toy problem.
 
   // set number of MD steps.  Trajectory length is always set to 1
-  numberOfMDSteps = 10;  // this gives a pretty high acceptance rate
-  ergJumpFrequency = -100; // please ignore this for now.  I did not discuss this in the notes.  Setting negative means no erg jumps.
+  numberOfMDSteps = 4;  // this gives a pretty high acceptance rate
+  ergJumpFrequency = 100; // please ignore this for now.  I did not discuss this in the notes.  Setting negative means no erg jumps.
 
   // set inverse "temperature"
-  beta = 3.0;
+  beta = 5.0;
 
   // initialize remaining parameters before running. . .
   ising.initialize(beta,mass,numberOfMDSteps,ergJumpFrequency);
 
   // some run parameters. . .
-  numOfTherm = 500000;
+  numOfTherm = 100000;
   numOfTrajs = 500000;
   saveFrequency=10;
 
@@ -64,12 +64,12 @@ int main(int argc, char** argv)
   double betaStart,betaEnd,deltaBeta;
 
   // here we start the annealing process.
-  betaStart=.2;  // we start at some high temperature
+  betaStart=min(.2,beta);  // we start at some high temperature
   betaEnd=beta;  // and this is our ending temperature
   deltaBeta=(betaEnd-betaStart)/numOfTherm;  // and we change in these small increments
 
   for(traj=0;traj<=numOfTherm;traj++) {
-    ising.reset(betaStart+traj * deltaBeta, numberOfMDSteps,ergJumpFrequency);  // this call resets the temperature, num of MD steps, and ergJump frequency
+    ising.reset(betaStart+traj * deltaBeta, numberOfMDSteps,-1*ergJumpFrequency);  // this call resets the temperature, num of MD steps, and ergJump frequency
     ising.hmcThermTraj(traj);  // this does one hmc thermal trajectory  (i.e. it always accepts)
   }
   ising.reset(beta, numberOfMDSteps, ergJumpFrequency);
@@ -105,6 +105,8 @@ int main(int argc, char** argv)
   std::cout << "# M = " << M << std::endl;
   std::cout << "# E = " << E << std::endl;
   std::cout << "# accept. rate = " << ising.mean(accP,numOfTrajs/saveFrequency) << std::endl;
+  std::cout << "# ergJ1   rate = " << ising.ergJumpTallies[0]*1.0/ising.totNumErgJumps << std::endl;
+  std::cout << "# ergJ2   rate = " << ising.ergJumpTallies[1]*1.0/ising.totNumErgJumps << std::endl;
 
   return 0;
 }
