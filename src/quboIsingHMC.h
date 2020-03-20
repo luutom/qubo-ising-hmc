@@ -127,6 +127,15 @@ public:
 	       const int numberOfMDSteps,
 	       const int ergJumpFrequency
 	       );
+
+  // anneal and turn on H slowly
+  void annealAndTurnOnH(
+	      const double initBeta,
+	      const double finalBeta,
+	      const size_t numOfTherm,
+	      const int numberOfMDSteps,
+	      const int ergJumpFrequency
+	      );
   
   // HMC run paramters
   std::vector<double> energy;

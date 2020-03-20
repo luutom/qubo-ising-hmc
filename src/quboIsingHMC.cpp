@@ -339,7 +339,7 @@ void ising::annealNoH(
 		   const int numberOfMDSteps,
 		   const int ergJumpFrequency
 ){
-    // here we start the annealing process.
+    // here we start the annealing process but set H=0
     const double betaStart= initBeta;  // we start at some high temperature
     const double betaEnd= finalBeta;  // and this is our ending temperature
     const double deltaBeta=(betaEnd-betaStart)/numOfTherm;  // and we change in these small increments
@@ -361,14 +361,39 @@ void ising::turnOnH(
 		    const int ergJumpFrequency
 		    ){
   // here we adiabatically turn on H
-  const double vuStart= 0.0;  // we start at some high temperature
-  const double vuEnd= 1.0;  // and this is our ending temperature
+  const double vuStart= 0.0;  // we start at vu * H = 0
+  const double vuEnd= 1.0;  // and we end at vu * H = H
   const double deltaVu=(vuEnd-vuStart)/numOfTherm;  // and we change in these small increments
 
   for(size_t traj=0;traj<=numOfTherm;traj++) {
     reset(beta, numberOfMDSteps,ergJumpFrequency,vuStart+traj * deltaVu);  // this call resets the temperature, num of MD steps, and ergJump frequency
     hmcTraj(traj);  // this does one hmc trajectory
   }
+}
+
+void ising::annealAndTurnOnH(
+		   const double initBeta,
+		   const double finalBeta,
+		   const size_t numOfTherm,
+		   const int numberOfMDSteps,
+		   const int ergJumpFrequency
+){
+    // here we start the annealing process and adiabatically turn on H as well
+    const double betaStart= initBeta;  // we start at some high temperature
+    const double betaEnd= finalBeta;  // and this is our ending temperature
+    const double deltaBeta=(betaEnd-betaStart)/numOfTherm;  // and we change in these small increments
+    const double vuStart= 0.0;  // we start at vu * H = 0
+  const double vuEnd= 1.0;  // and we end at vu * H = H
+  const double deltaVu=(vuEnd-vuStart)/numOfTherm;  // and we change in these small increments
+
+    for(size_t traj=0;traj<=numOfTherm;traj++) {
+      reset(betaStart+traj * deltaBeta, numberOfMDSteps,ergJumpFrequency,vuStart+traj * deltaVu);  // this call resets the temperature, num of MD steps, and ergJump frequency
+      hmcTraj(traj);  // this does one hmc trajectory 
+    }
+    //    reset(finalBeta, numberOfMDSteps, ergJumpFrequency,lambda);
+    //    for(size_t traj=0;traj<=numOfTherm;traj++) {
+    //      hmcTraj(traj);  // now run with accept/reject
+    //    }
 }
 
 int ising::calcPdot(){

@@ -33,6 +33,7 @@ cdef extern from "quboIsingHMC.h":
         void run_hmc(const double, const size_t, const int, const int, const size_t);
         void annealNoH(const double, const double, const size_t, const int, const int);
         void turnOnH(const double, const size_t, const int, const int);
+        void annealAndTurnOnH(const double, const double, const size_t, const int, const int);
 
 
 cdef class Ising:
@@ -159,6 +160,11 @@ cdef class Ising:
         """
         """
         self._cobj.turnOnH(beta, numOfTherm, numberOfMDSteps, ergJumpFrequency)
+
+    def annealAndTurnOnH(self, const double initBeta, const double finalBeta, const size_t numOfTherm, const int numberOfMDSteps, const int ergJumpFrequency=-100):
+        """
+        """
+        self._cobj.annealAndTurnOnH(initBeta, finalBeta, numOfTherm, numberOfMDSteps, ergJumpFrequency)
 
     @property
     def configs(self) -> np.ndarray:
