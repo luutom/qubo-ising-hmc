@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Setup file for qubo_ising_hmc
+"""Setup file for qihmc
 """
 __author__ = "None"
 __version__ = "0.1.0"
@@ -14,31 +14,25 @@ from numpy import get_include
 
 ROOT = path.abspath(path.dirname(__file__))
 SRC = path.join(ROOT, "src")
-PY_SRC = path.join(ROOT, "qubo_ising_hmc")
 
 SOURCES = [
     path.join(SRC, "quboIsingHMC.cpp"),
-    path.join(PY_SRC, "_qubo_ising_hmc.pyx"),
+    path.join(SRC, "_qubo_ising_hmc.pyx"),
 ]
 
 EXTENSIONS = Extension(
-    name="qubo_ising_hmc._qubo_ising_hmc",
+    name="qihmc.qihmc_cc",
     sources=SOURCES,
     include_dirs=[SRC, get_include()],
-    language="c++",
+    language="c++14",
     extra_compile_args=["-O0", "-march=native", "-ffast-math", "-fopenmp"]
 )
 
-CWD = path.abspath(path.dirname(__file__))
-
-with open(path.join(CWD, "README.md"), encoding="utf-8") as inp:
+with open(path.join(ROOT, "README.md"), encoding="utf-8") as inp:
     LONG_DESCRIPTION = inp.read()
 
-with open(path.join(CWD, "requirements.txt"), encoding="utf-8") as inp:
-    REQUIREMENTS = [el.strip() for el in inp.read().split("\n")]
-
 setup(
-    name="qubo_ising_hmc",
+    name="qihmc",
     version=__version__,
     description=None,
     long_description=LONG_DESCRIPTION,
@@ -48,6 +42,6 @@ setup(
     author_email=None,
     keywords=[],
     packages=find_packages(exclude=["docs", "tests"]),
-    install_requires=REQUIREMENTS,
+    package_dir={'': 'src'},
     ext_modules=cythonize([EXTENSIONS]),
 )
