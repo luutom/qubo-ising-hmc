@@ -26,6 +26,7 @@ EXTENSIONS = Extension(
     sources=SOURCES,
     include_dirs=[SRC, get_include()],
     language="c++",
+    extra_compile_args=["-O0", "-march=native", "-ffast-math", "-fopenmp"]
 )
 
 CWD = path.abspath(path.dirname(__file__))
