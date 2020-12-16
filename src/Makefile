@@ -3,7 +3,7 @@
 
 ### GNU 
 ### change your compiler options here. . .
-CXX=g++-9
+CXX=g++-10
 CXXFLAGS=-std=c++11 -O2 -fopenmp -Wpedantic
 
 ### WARNINGS
