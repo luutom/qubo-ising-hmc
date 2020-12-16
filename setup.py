@@ -34,7 +34,7 @@ with open(path.join(CWD, "README.md"), encoding="utf-8") as inp:
     LONG_DESCRIPTION = inp.read()
 
 with open(path.join(CWD, "requirements.txt"), encoding="utf-8") as inp:
-    REQUIREMENTS = [el.strip() for el in inp.read().split(",")]
+    REQUIREMENTS = [el.strip() for el in inp.read().split("\n")]
 
 setup(
     name="qubo_ising_hmc",
