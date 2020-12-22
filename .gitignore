@@ -7,6 +7,7 @@
 *.o
 *.obj
 
+
 # Precompiled Headers
 *.gch
 *.pch
@@ -45,3 +46,7 @@ quboIsingHMC.pdf
 
 # python
 *.egg-info
+*.pyc
+*.ipynb_checkpoints
+
+src/_qubo_ising_hmc.cpp
