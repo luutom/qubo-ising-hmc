@@ -8,6 +8,10 @@ Install via pip
 pip install [--user] -r requirements.txt
 pip install [-e] [--user] .
 ```
+If you want to specify a specific CC file, you can install as (for example, a homebrewed gcc)
+```
+CC=/usr/local/Cellar/gcc/10.2.0/bin/c++-10  pip install -e .
+```
 
 
 ## Run
