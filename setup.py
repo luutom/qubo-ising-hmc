@@ -41,7 +41,7 @@ def findgccbin():
     environ["CC"] = p.as_posix()
     #environ["CXX"] = p.parents[0].joinpath('g++').as_posix()
     # assume that CXX is in the same directory as CC and has the same extension
-    # for example, c++-10 -> cpp-10, gcc-10 -> g++-10
+    # for example, c++-10 -> g++-10, gcc-10 -> g++-10
     environ["CXX"] = str(pathlib.Path(environ["CC"]).parent.absolute())+'/'+environ["CC"].split('/')[-1].replace('gcc','g++').replace('c++','g++')
     print('CXX location:',environ["CXX"])
     if not path.exists(environ["CXX"]):
