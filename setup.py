@@ -39,7 +39,15 @@ def findgccbin():
     p = pathlib.Path(gcc)
     # set some associated env vars for make
     environ["CC"] = p.as_posix()
-    environ["CXX"] = p.parents[0].joinpath('g++').as_posix()
+    #environ["CXX"] = p.parents[0].joinpath('g++').as_posix()
+    # assume that CXX is in the same directory as CC and has the same extension
+    # for example, c++-10 -> cpp-10, gcc-10 -> g++-10
+    environ["CXX"] = str(pathlib.Path(environ["CC"]).parent.absolute())+'/'+environ["CC"].split('/')[-1].replace('gcc','g++').replace('c++','g++')
+    print('CXX location:',environ["CXX"])
+    if not path.exists(environ["CXX"]):
+        raise SystemError("Missing g++/cpp, add to path or set env CXX")
+    else:
+        print("Found g++/cpp at ",environ["CXX"])
     # Fix failure on unbuntu
     # https://stackoverflow.com/questions/45308426/distutils-partially-ignoring-cc-environment-variable-when-building-python-extens
     if platform.system() != 'Darwin':
