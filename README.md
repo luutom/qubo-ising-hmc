@@ -3,7 +3,13 @@
 ## Description
 
 ## Install
-Install via pip
+
+Prior to installing this library, you must install the `qlp` libraries, which can be found here
+```
+https://github.com/Berkeley-Quantum-Horizons/qlp
+```
+
+Then, install this `qubo_ising_hmc` via pip
 ```bash
 pip install [--user] -r requirements.txt
 pip install [-e] [--user] .

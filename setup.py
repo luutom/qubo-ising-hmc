@@ -34,28 +34,34 @@ def findgccbin():
     # do test run of gcc
     cmd = gcc + " -v"
     ps = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT).communicate()[0].decode("utf-8").split("\n")
-    if ps[0] != "Using built-in specs.":
-        raise SystemError("Requires gcc. Exiting install")
+
+    # determine if we have clang or gnu gcc or raise an error
+    have_gnu = any(['gcc version' in p for p in ps])
+    have_clang = any(['clang' in p for p in ps])
+
+    if not have_gnu and not have_clang:
+        raise SystemError("Unsupported compiler.  We only support gnu gcc and clang now")
+
     p = pathlib.Path(gcc)
     # set some associated env vars for make
     environ["CC"] = p.as_posix()
-    #environ["CXX"] = p.parents[0].joinpath('g++').as_posix()
     # assume that CXX is in the same directory as CC and has the same extension
     # for example, c++-10 -> g++-10, gcc-10 -> g++-10
-    environ["CXX"] = str(pathlib.Path(environ["CC"]).parent.absolute())+'/'+environ["CC"].split('/')[-1].replace('gcc','g++').replace('c++','g++')
-    print('CXX location:',environ["CXX"])
+    gcc_path = str(pathlib.Path(environ["CC"]).parent.absolute())
+    gxx      = environ["CC"].split('/')[-1].replace('gcc','g++').replace('c++','g++')
+    environ["CXX"] = gcc_path +'/'+ gxx
     if not path.exists(environ["CXX"]):
-        raise SystemError("Missing g++/cpp, add to path or set env CXX")
+        raise SystemError("Missing g++")
     else:
-        print("Found g++/cpp at ",environ["CXX"])
+        print("Found g++ at ",environ["CXX"])
     # Fix failure on unbuntu
     # https://stackoverflow.com/questions/45308426/distutils-partially-ignoring-cc-environment-variable-when-building-python-extens
     if platform.system() != 'Darwin':
         environ["LDSHARED"] = environ["CXX"] + " -std=c++14 -pthread -shared"
-    return p.parents[0]
+    return p.parents[0], have_clang
 
 # collect paths to things we need
-gccbin = findgccbin()
+gccbin, have_clang = findgccbin()
 gcclib64 = gccbin.parents[0].joinpath('lib64')
 if not gcclib64.is_dir():
     gcclib64 = gccbin.parents[0].joinpath('lib')
@@ -64,7 +70,12 @@ if not gcclib64.is_dir():
 GCCLIB64 = gcclib64.as_posix()
 
 ldirs=['src/', '/usr/local/lib', GCCLIB64]
-link_list=['-fopenmp']
+if have_clang:
+    link_list    = ['-Xpreprocessor', '-fopenmp', '-stdlib=libc++']
+    compile_args = ["-O0", "-march=native", "-ffast-math", "-Xpreprocessor", "-fopenmp", "-stdlib=libc++", "-std=c++14"]
+else:
+    link_list    = ['-fopenmp']
+    compile_args = ["-O0", "-march=native", "-ffast-math", "-fopenmp"]
 
 EXTENSIONS = Extension(
     name="qihmc.qihmc_cc",
@@ -72,7 +83,7 @@ EXTENSIONS = Extension(
     library_dirs = ldirs,
     include_dirs=[SRC, get_include()],
     language="c++14",
-    extra_compile_args=["-O0", "-march=native", "-ffast-math", "-fopenmp"],
+    extra_compile_args=compile_args,
     extra_link_args = link_list,
 )
 
