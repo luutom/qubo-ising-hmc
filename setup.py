@@ -68,11 +68,14 @@ if not gcclib64.is_dir():
 
 # define include dirs
 GCCLIB64 = gcclib64.as_posix()
-
 ldirs=['src/', '/usr/local/lib', GCCLIB64]
+i_dirs = [SRC, get_include()]
 if have_clang:
     link_list    = ['-Xpreprocessor', '-fopenmp', '-stdlib=libc++']
     compile_args = ["-O0", "-march=native", "-ffast-math", "-Xpreprocessor", "-fopenmp", "-stdlib=libc++", "-std=c++14"]
+    if 'Xcode' in str(gccbin):
+        #include_dir = '/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include'
+        raise SystemError("We do not yet know how to point to the actual clang compiler in Xcode.app\nTry pointing to either\n/usr/bin/c++\n/usr/bin/gcc\nif you want to use the apple clang")
 else:
     link_list    = ['-fopenmp']
     compile_args = ["-O0", "-march=native", "-ffast-math", "-fopenmp"]
@@ -81,7 +84,7 @@ EXTENSIONS = Extension(
     name="qihmc.qihmc_cc",
     sources=SOURCES,
     library_dirs = ldirs,
-    include_dirs=[SRC, get_include()],
+    include_dirs = i_dirs,
     language="c++14",
     extra_compile_args=compile_args,
     extra_link_args = link_list,
